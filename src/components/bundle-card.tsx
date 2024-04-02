@@ -39,7 +39,10 @@ export const SampleBundle = () => {
     const audioElem = document.getElementById(
       id.toString(),
     ) as HTMLAudioElement | null;
-    audioElem?.play();
+    if (audioElem) {
+      audioElem.currentTime = 0;
+      audioElem.play();
+    }
   };
 
   const pauseSample = (id: number) => {
@@ -52,39 +55,14 @@ export const SampleBundle = () => {
     }
   };
 
-  //only for development setting fileUrls like this because supabase is currently down
-
   useEffect(() => {
-    //  getAudio();
-    setFileUrls((prev) => {
-      return [
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-        "",
-      ];
-    });
+    getAudio();
   }, []);
+
   return (
     <div className="m-auto mt-4">
-      <Card className="w-48 h-48 overflow-hidden">
-        <ScrollArea className="h-full text-center mt-2 oveflow-hidden">
+      <Card className="w-48 h-48 overflow-hidden flex ">
+        <ScrollArea className="h-full text-left mt-2 overflow-hidden ml-[7px]">
           {fileUrls.map((url, i) => {
             return (
               <Button
