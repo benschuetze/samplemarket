@@ -47,8 +47,34 @@ export const SampleBundle = () => {
     }
   };
 
+  //only for development setting fileUrls like this because supabase is currently down
+
   useEffect(() => {
-    getAudio();
+    //  getAudio();
+    setFileUrls((prev) => {
+      return [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+        "",
+      ];
+    });
   }, []);
   return (
     <div>
