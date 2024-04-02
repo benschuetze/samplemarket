@@ -5,8 +5,9 @@ export const ExploreAllContainer = () => {
   //each one as a SampleBundle component
 
   return (
-    <div>
-      <SampleBundle /> <SampleBundle /> <SampleBundle /> <SampleBundle />
+    <div className="flex flex-wrap ">
+      <SampleBundle /> <SampleBundle /> <SampleBundle />
+      <SampleBundle />
       <SampleBundle /> <SampleBundle /> <SampleBundle />
     </div>
   );

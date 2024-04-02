@@ -2,8 +2,13 @@ import { Button } from "./ui/button";
 import { Card } from "./ui/card";
 import { supabase } from "../supabase";
 import { useEffect, useState } from "react";
+import { ScrollArea } from "./ui/scroll-area";
 
 export const SampleBundle = () => {
+  // later this will all be rewritten so that i dont request the stored files in the bucket but the
+  // objects stored in the db that hold the file urls or ill fetch the data one level above and
+  // pass it as a prop
+
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const getAudio = async () => {
     const { data, error } = await supabase.storage
@@ -77,22 +82,25 @@ export const SampleBundle = () => {
     });
   }, []);
   return (
-    <div>
-      <Card>
-        {fileUrls.map((url, i) => {
-          return (
-            <Button
-              key={i}
-              variant="outline"
-              size="icon"
-              onMouseEnter={() => playSample(i)}
-              onClick={() => playSample(i)}
-              onMouseLeave={() => pauseSample(i)}
-            >
-              <audio id={i.toString()} src={url}></audio>
-            </Button>
-          );
-        })}
+    <div className="m-auto mt-4">
+      <Card className="w-48 h-48 overflow-hidden">
+        <ScrollArea className="h-full text-center mt-2 oveflow-hidden">
+          {fileUrls.map((url, i) => {
+            return (
+              <Button
+                key={i}
+                variant="outline"
+                size="icon"
+                onMouseEnter={() => playSample(i)}
+                onClick={() => playSample(i)}
+                onMouseLeave={() => pauseSample(i)}
+                className="mx-0.5"
+              >
+                <audio id={i.toString()} src={url}></audio>
+              </Button>
+            );
+          })}
+        </ScrollArea>
       </Card>
     </div>
   );
