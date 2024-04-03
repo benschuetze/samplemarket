@@ -5,6 +5,7 @@ import { supabase } from "../supabase";
 import { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
 import { DockIcon, PlusIcon } from "lucide-react";
+import { get } from "http";
 
 export const SampleBundle = () => {
   // later this will all be rewritten so that i dont request the stored files in the bucket but the
@@ -37,13 +38,15 @@ export const SampleBundle = () => {
     setFileUrls((prev) => fileUrls);
   };
 
-  const playSample = (id: string, buttonId: string, iconId: string) => {
+  const playSample = (id: string, buttonId: string, iconId: string | null) => {
     let button = document.getElementById(buttonId);
     const icon = document.getElementById(iconId);
     if (icon) icon.style.opacity = "1";
     if (button) button.style.borderColor = "grey";
     setTimeout(() => {
-      if (button) button.style.borderColor = "";
+      if (button) {
+        button.style.borderColor = "";
+      }
     }, 100);
 
     const audioElem = document.getElementById(
@@ -67,6 +70,38 @@ export const SampleBundle = () => {
     }
   };
 
+  function getSampleName(url: string) {
+    console.log("url: ", url);
+    const regex = /(kick|snare|hihat|hat|hh|tom|perc|cymbal|crash|clap)/i;
+
+    if (regex.test(url)) {
+      const match = url.match(regex)[1].toLowerCase();
+      switch (match) {
+        case "kick":
+          return "Kick";
+        case "snare":
+          return "Snare";
+        case "hihat":
+        case "hat":
+        case "hh":
+          return "HiHat";
+        case "tom":
+          return "Tom";
+        case "clap":
+          return "Clap";
+        case "perc":
+          return "Perc";
+        case "cymbal":
+        case "crash":
+          return "Cymbal";
+        default:
+          return "";
+      }
+    } else {
+      return "";
+    }
+  }
+
   useEffect(() => {
     getAudio();
   }, []);
@@ -74,11 +109,12 @@ export const SampleBundle = () => {
   return (
     <div className="m-auto mt-4">
       <Card className="w-48 h-48 overflow-hidden flex ">
-        <ScrollArea className="h-full text-left mt-2 overflow-hidden ml-[7px]">
+        <ScrollArea className="text-left mt-2 mb-2 overflow-hidden ml-[7px]">
           {fileUrls.map((url, i) => {
             const audioId = uuidv4();
             const buttonId = `button-${audioId}`;
             const iconId = `icon-${audioId}`;
+            const sampleCategory = getSampleName(url);
             return (
               <Button
                 key={i}
@@ -86,10 +122,13 @@ export const SampleBundle = () => {
                 variant="outline"
                 size="icon"
                 onMouseEnter={() => playSample(audioId, buttonId, iconId)}
-                onClick={() => playSample(audioId, buttonId)}
+                onClick={() => playSample(audioId, buttonId, null)}
                 onMouseLeave={() => pauseSample(audioId, iconId)}
-                className="m-0.5"
+                className="m-0.5 relative"
               >
+                <span className="absolute bottom-0 left-0.5 text-xs">
+                  {sampleCategory}
+                </span>
                 <PlusIcon
                   className={`h-6
                   w-6
