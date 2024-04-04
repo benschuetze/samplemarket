@@ -1,11 +1,19 @@
+import Wavesurfer from "wavesurfer.js";
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "./ui/button";
-import { Card, CardHeader, CardTitle } from "./ui/card";
+import { Card, CardFooter, CardHeader, CardTitle } from "./ui/card";
 import { supabase } from "../supabase";
 import React, { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
-import { Divide, PlusIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 import { Separator } from "@radix-ui/react-dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "./ui/tooltip";
 
 interface SampleBundleProps {
   hoveredCardId: string;
@@ -14,17 +22,16 @@ interface SampleBundleProps {
 }
 
 export const SampleBundle: React.FC<SampleBundleProps> = ({
-  hoveredCardId,
   setHoveredCardId,
   cardId,
 }) => {
-  // later this will all be rewritten so that i dont request the stored files in the bucket but the
-  // objects stored in the db that hold the file urls or ill fetch the data one level above and
-  // pass it as a prop
-
   const [fileUrls, setFileUrls] = useState<string[]>([]);
-  const [audioPlayEnabled, setAudioPlayEnabled] = useState<boolean>(false);
-  const [currentlyPlayingSample, setCurrentlyPlayingSample] = useState({id: "", iconId: ""})
+
+  const [loopUrls, setLoopUrls] = useState<string[]>([]);
+  const [currentlyPlayingSample, setCurrentlyPlayingSample] = useState({
+    id: "",
+    iconId: "",
+  });
 
   const getAudio = async () => {
     const { data, error } = await supabase.storage
@@ -46,17 +53,36 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
         .getPublicUrl(`samples/${name}`);
       fileUrls.push(data.publicUrl);
     });
-    setFileUrls((prev) => fileUrls);
+    setFileUrls(() => fileUrls);
+
+    // this section is completely redundant and only used for ui development of
+    // the loop display section. dont think about it
+    const { data: data2, error: error2 } = await supabase.storage
+      .from("sounds-for-development")
+      .list("loops", {
+        limit: 100,
+        offset: 0,
+        sortBy: {
+          column: "name",
+          order: "asc",
+        },
+      });
+    if (error2) console.log("error2: ", error2);
+    const loopUrls: Array<string> = [];
+    data2?.forEach((filedata2) => {
+      const name = filedata2.name;
+      const { data } = supabase.storage
+        .from("sounds-for-development")
+        .getPublicUrl(`loops/${name}`);
+      loopUrls.push(data.publicUrl);
+    });
+    setLoopUrls(() => loopUrls);
   };
 
   //@ts-ignore
   const playSample = ({ id, buttonId, iconId }) => {
-    pauseSample(currentlyPlayingSample.id, currentlyPlayingSample.iconId)
-    setCurrentlyPlayingSample((prev) => ({id, iconId}))
-
-
-
-
+    pauseSample(currentlyPlayingSample.id, currentlyPlayingSample.iconId);
+    setCurrentlyPlayingSample(() => ({ id, iconId }));
 
     let button = document.getElementById(buttonId);
     const icon = document.getElementById(iconId);
@@ -124,21 +150,59 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
     getAudio();
   }, []);
 
+  useEffect(() => {
+    loopUrls.forEach((url) => {
+      const wavesurfer = Wavesurfer.create({
+        container: document.getElementById(`loop-container-${cardId}`),
+        waveColor: "grey",
+        progressColor: "white",
+        url: url,
+        barWidth: 5,
+        barGap: 3,
+        barRadius: 4,
+        height: 40,
+        cursorWidth: 0,
+        dragToSeek: true,
+      });
+
+      wavesurfer.on("click", () => {
+        wavesurfer.playPause();
+      });
+    });
+  }, [loopUrls]);
+
   return (
     <div
       className="m-auto mt-4 "
-      onMouseEnter={() => setHoveredCardId((prev) => cardId)}
-      onMouseLeave={() => setHoveredCardId((prev) => "")}
+      onMouseEnter={() => setHoveredCardId(() => cardId)}
+      onMouseLeave={() => setHoveredCardId(() => "")}
     >
       <Card
-        className="w-48 h-64 overflow-hidden flex flex-col bg-#1c1917 "
+        className="w-[236px] h-[400px] overflow-hidden flex flex-col bg-#1c1917 "
         id={cardId}
       >
-        <CardHeader className="min-h-[64px] m-0 px-2 py-[2px] flex flex-row bg-#1c1917">
-          <CardTitle className="text-base font-medium w-[124px] bg-#1c1917">
-            Classic Drums
+        <CardHeader className="-0 px-2 py-[2px] flex flex-row bg-#1c1917">
+          <CardTitle className="text-base font-medium w-[180px] bg-#1c1917 flex flex-col relative">
+            <span>Classic Drums</span>
+            <span className="text-xs text-zinc-600">
+              #Techno #oldSchool #melodic #drums #oneShots{" "}
+            </span>
           </CardTitle>
-          <div className="border-red-800 bg-#1c1917 ">Bild</div>
+          <div className="border-red-800 text-sm items-end flex flex-col justify-between bg-#1c1917 ">
+            <TooltipProvider>
+              <Tooltip delayDuration={100}>
+                <TooltipTrigger asChild>
+                  <img
+                    className="h-[40px] w-[40px] contain cursor-pointer"
+                    src="https://i1.sndcdn.com/avatars-TD1oEKpD7hhrlbN7-r6cNKQ-t500x500.jpg"
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>The Sixth Sense</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+          </div>
         </CardHeader>
         <Separator className="h-[0.5px] bg-zinc-200/20 bg-#1c1917" />
         <div
@@ -148,12 +212,13 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
         <ScrollArea
           className="text-left
             mt-2
-            mb-2
+            mb-8
             overflow-hidden
             ml-[7px]
             bg-opacity-0
             "
         >
+          <h2>One Shots</h2>
           {fileUrls.map((url, i) => {
             const audioId = uuidv4();
             const buttonId = `button-${audioId}`;
@@ -194,7 +259,25 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
               </Button>
             );
           })}
+
+          <Separator className="h-[0.5px] bg-zinc-200/20 bg-#1c1917 w-[220px] mt-2 mb-1 " />
+          <h2>Loops</h2>
+          <div id={`loop-container-${cardId}`} className="mx-1"></div>
         </ScrollArea>
+
+        <Separator className="h-[0.5px] bg-zinc-200/20 bg-#1c1917 -translate-y-[32px]" />
+        <CardFooter className="flex relative ">
+          <span className="absolute bottom-3 left-4 text-2xl text-zinc-200">
+            25€
+          </span>
+          <Button
+            variant="outline"
+            className="absolute right-2 !border-[#3ecf8e]/20 bottom-3 hover:!bg-[#3ecf8e]/30
+              hover:!border-[#3ecf8e]/50 h-8 flex items-center"
+          >
+            Buy
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );
