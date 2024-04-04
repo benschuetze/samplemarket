@@ -7,7 +7,7 @@ export const ExploreAllContainer = () => {
   const [hoveredCardId, setHoveredCardId] = useState<string>("");
 
   return (
-    <div className="flex flex-wrap ">
+    <div className="flex flex-wrap  ">
       <SampleBundle
         hoveredCardId={hoveredCardId}
         setHoveredCardId={setHoveredCardId}

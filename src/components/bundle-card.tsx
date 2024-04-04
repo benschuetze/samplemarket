@@ -118,12 +118,12 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
 
   return (
     <div
-      className="m-auto mt-4"
+      className="m-auto mt-4 "
       onMouseEnter={() => setHoveredCardId((prev) => cardId)}
       onMouseLeave={() => setHoveredCardId((prev) => "")}
     >
       <Card
-        className="w-48 h-64 overflow-hidden flex flex-col bg-#1c1917"
+        className="w-48 h-64 overflow-hidden flex flex-col bg-#1c1917 "
         id={cardId}
       >
         <CardHeader className="min-h-[64px] m-0 px-2 py-[2px] flex flex-row bg-#1c1917">
@@ -164,7 +164,7 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
                     iconId: null,
                   })
                 }
-                className="m-0.5 relative bg-opacity-0 hover:!bg-primary hover:!text-black"
+                className="m-0.5  relative bg-opacity-0 hover:!bg-primary hover:!text-black"
               >
                 <span className="absolute bottom-0 left-0.5 text-xs text-[#797981]">
                   {sampleCategory}
