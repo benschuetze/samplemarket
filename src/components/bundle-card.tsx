@@ -24,6 +24,7 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
 
   const [fileUrls, setFileUrls] = useState<string[]>([]);
   const [audioPlayEnabled, setAudioPlayEnabled] = useState<boolean>(false);
+  const [currentlyPlayingSample, setCurrentlyPlayingSample] = useState({id: "", iconId: ""})
 
   const getAudio = async () => {
     const { data, error } = await supabase.storage
@@ -50,7 +51,13 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
 
   //@ts-ignore
   const playSample = ({ id, buttonId, iconId }) => {
-    pauseSample(id, iconId)
+    pauseSample(currentlyPlayingSample.id, currentlyPlayingSample.iconId)
+    setCurrentlyPlayingSample((prev) => ({id, iconId}))
+
+
+
+
+
     let button = document.getElementById(buttonId);
     const icon = document.getElementById(iconId);
     if (icon) icon.style.opacity = "1";
