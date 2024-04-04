@@ -50,6 +50,7 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
 
   //@ts-ignore
   const playSample = ({ id, buttonId, iconId }) => {
+    pauseSample(id, iconId)
     let button = document.getElementById(buttonId);
     const icon = document.getElementById(iconId);
     if (icon) icon.style.opacity = "1";
@@ -166,7 +167,7 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
                 }
                 className="m-0.5  relative bg-opacity-0 hover:!bg-primary hover:!text-black"
               >
-                <span className="absolute bottom-0 left-0.5 text-xs text-[#797981]">
+                <span className="absolute bottom-0.5 left-1 text-xs text-[#797981]">
                   {sampleCategory}
                 </span>
                 <PlusIcon
