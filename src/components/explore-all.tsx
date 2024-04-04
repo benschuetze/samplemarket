@@ -7,7 +7,10 @@ export const ExploreAllContainer = () => {
   const [hoveredCardId, setHoveredCardId] = useState<string>("");
 
   return (
-    <div className="flex flex-wrap  mt-16">
+    <div
+      className="flex flex-wrap  mx-auto mt-16"
+      style={{ maxWidth: "1340px" }}
+    >
       <SampleBundle
         hoveredCardId={hoveredCardId}
         setHoveredCardId={setHoveredCardId}

@@ -173,7 +173,7 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
 
   return (
     <div
-      className="m-auto mt-4 "
+      className="mt-4 mx-4"
       onMouseEnter={() => setHoveredCardId(() => cardId)}
       onMouseLeave={() => setHoveredCardId(() => "")}
     >

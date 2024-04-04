@@ -14,47 +14,58 @@ import {
 
 export const Header = () => {
   return (
-    <header className="w-full fixed backdrop-blur z-50 border-b h-16 flex items-center px-4 justify-between">
-      <div>
-        <span className="font-semibold">sample</span>
-        <span className="font-semibold">/market</span>
+    <header className="relative w-full fixed top-0 left-0 right-0 z-50">
+      <div
+        className="w-full max-w-screen-xl mx-auto px-4"
+        style={{ maxWidth: "1340px" }}
+      >
+        <div className="flex items-center justify-between h-16">
+          <div>
+            <span className="font-semibold">sample</span>
+            <span className="font-semibold">/market</span>
+          </div>
+          <NavigationMenu>
+            <NavigationMenuList>
+              <NavigationMenuItem className="!bg-transparent">
+                <Link to="/" legacyBehavior passHref>
+                  <NavigationMenuLink
+                    className={`
+                      ${navigationMenuTriggerStyle()} 
+                      !bg-transparent
+                      hover:!bg-zinc-900
+                      hover:!bg-opacity-40
+                    `}
+                  >
+                    Browse
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem className="!bg-transparent">
+                <Link to="/" legacyBehavior passHref>
+                  <NavigationMenuLink
+                    className={`
+                      ${navigationMenuTriggerStyle()} 
+                      !bg-transparent
+                      hover:!bg-zinc-900
+                      hover:!bg-opacity-40
+                    `}
+                  >
+                    Upload
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavigationMenuTrigger>Genres</NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <NavigationMenuLink>Link</NavigationMenuLink>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        </div>
+        {/* Pseudo-element for the bottom border */}
+        <div className="absolute bottom-0 left-0 right-0 h-[1px] bg-zinc-700"></div>
       </div>
-      <NavigationMenu >
-        <NavigationMenuList>
-          <NavigationMenuItem className="!bg-transparent">
-            <Link to="/" legacyBehavior passHref>
-              <NavigationMenuLink className={`
-                ${navigationMenuTriggerStyle() } 
-                !bg-transparent
-                hover:!bg-zinc-900
-                
-                hover:!bg-opacity-40
-                `
-              }>
-                 Browse 
-              </NavigationMenuLink>
-            </Link>
-          </NavigationMenuItem>
-          <NavigationMenuItem className="!bg-transparent">
-            <Link to="/" legacyBehavior passHref>
-              <NavigationMenuLink className={`
-                ${navigationMenuTriggerStyle() } 
-                !bg-transparent
-                hover:!bg-zinc-900
-                hover:!bg-opacity-40`
-              }>
-                Upload 
-              </NavigationMenuLink>
-            </Link>
-          </NavigationMenuItem>
-          <NavigationMenuItem>
-            <NavigationMenuTrigger>Genres</NavigationMenuTrigger>
-            <NavigationMenuContent>
-              <NavigationMenuLink>Link</NavigationMenuLink>
-            </NavigationMenuContent>
-          </NavigationMenuItem>
-        </NavigationMenuList>
-      </NavigationMenu>
     </header>
   );
 };
