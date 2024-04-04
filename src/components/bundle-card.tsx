@@ -1,20 +1,30 @@
 import { v4 as uuidv4 } from "uuid";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
+import { Card, CardHeader, CardTitle } from "./ui/card";
 import { supabase } from "../supabase";
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ScrollArea } from "./ui/scroll-area";
-import { DockIcon, PlusIcon } from "lucide-react";
-import { get } from "http";
+import { Divide, PlusIcon } from "lucide-react";
+import { Separator } from "@radix-ui/react-dropdown-menu";
 
-export const SampleBundle = () => {
+interface SampleBundleProps {
+  hoveredCardId: string;
+  setHoveredCardId: React.Dispatch<React.SetStateAction<string>>;
+  cardId: string;
+}
+
+export const SampleBundle: React.FC<SampleBundleProps> = ({
+  hoveredCardId,
+  setHoveredCardId,
+  cardId,
+}) => {
   // later this will all be rewritten so that i dont request the stored files in the bucket but the
   // objects stored in the db that hold the file urls or ill fetch the data one level above and
   // pass it as a prop
 
   const [fileUrls, setFileUrls] = useState<string[]>([]);
-  const [idOfCurrentlyHoveredSample, setIdOfCurrentlyHoveredSample] =
-    useState<string>("");
+  const [audioPlayEnabled, setAudioPlayEnabled] = useState<boolean>(false);
+
   const getAudio = async () => {
     const { data, error } = await supabase.storage
       .from("sounds-for-development")
@@ -38,7 +48,8 @@ export const SampleBundle = () => {
     setFileUrls((prev) => fileUrls);
   };
 
-  const playSample = (id: string, buttonId: string, iconId: string | null) => {
+  //@ts-ignore
+  const playSample = ({ id, buttonId, iconId }) => {
     let button = document.getElementById(buttonId);
     const icon = document.getElementById(iconId);
     if (icon) icon.style.opacity = "1";
@@ -71,7 +82,6 @@ export const SampleBundle = () => {
   };
 
   function getSampleName(url: string) {
-    console.log("url: ", url);
     const regex = /(kick|snare|hihat|hat|hh|tom|perc|cymbal|crash|clap)/i;
 
     if (regex.test(url)) {
@@ -107,9 +117,35 @@ export const SampleBundle = () => {
   }, []);
 
   return (
-    <div className="m-auto mt-4">
-      <Card className="w-48 h-48 overflow-hidden flex ">
-        <ScrollArea className="text-left mt-2 mb-2 overflow-hidden ml-[7px]">
+    <div
+      className="m-auto mt-4"
+      onMouseEnter={() => setHoveredCardId((prev) => cardId)}
+      onMouseLeave={() => setHoveredCardId((prev) => "")}
+    >
+      <Card
+        className="w-48 h-64 overflow-hidden flex flex-col bg-#1c1917"
+        id={cardId}
+      >
+        <CardHeader className="min-h-[64px] m-0 px-2 py-[2px] flex flex-row bg-#1c1917">
+          <CardTitle className="text-base font-medium w-[124px] bg-#1c1917">
+            Classic Drums
+          </CardTitle>
+          <div className="border-red-800 bg-#1c1917 ">Bild</div>
+        </CardHeader>
+        <Separator className="h-[0.5px] bg-zinc-200/20 bg-#1c1917" />
+        <div
+          className="w-full h-auto relative bg-#1c1917"
+          style={{ backgroundColor: "#22c55e" }}
+        ></div>
+        <ScrollArea
+          className="text-left
+            mt-2
+            mb-2
+            overflow-hidden
+            ml-[7px]
+            bg-opacity-0
+            "
+        >
           {fileUrls.map((url, i) => {
             const audioId = uuidv4();
             const buttonId = `button-${audioId}`;
@@ -121,12 +157,16 @@ export const SampleBundle = () => {
                 id={buttonId}
                 variant="outline"
                 size="icon"
-                onMouseEnter={() => playSample(audioId, buttonId, iconId)}
-                onClick={() => playSample(audioId, buttonId, null)}
-                onMouseLeave={() => pauseSample(audioId, iconId)}
-                className="m-0.5 relative"
+                onClick={() =>
+                  playSample({
+                    id: audioId,
+                    buttonId,
+                    iconId: null,
+                  })
+                }
+                className="m-0.5 relative bg-opacity-0 hover:!bg-primary hover:!text-black"
               >
-                <span className="absolute bottom-0 left-0.5 text-xs">
+                <span className="absolute bottom-0 left-0.5 text-xs text-[#797981]">
                   {sampleCategory}
                 </span>
                 <PlusIcon
@@ -134,10 +174,11 @@ export const SampleBundle = () => {
                   w-6
                   flex 
                   items-end 
-                  text-zinc-100/30  
+                  text-[#37996b]
                   rounded-md 
-                  hover:text-zinc-100 
                  opacity-0
+                 hover:text-[#22c55e]
+                 font-bold
                  `}
                   id={iconId}
                 />

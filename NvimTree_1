@@ -1,0 +1,33 @@
+  .git
+  public
+  ✗ ★ src
+    assets
+    ✗ ★ components
+  │   ★ ui
+  │ │  ✗ bundle-card.tsx
+  │ │  ✗ explore-all.tsx
+  │ │  ✗ header.tsx
+  │ │  mode-toggle.tsx
+  │ └  theme-provider.tsx
+    lib
+    routes
+    sounds
+  │  App.css
+  │  App.tsx
+  │  index.css
+  │  main.tsx
+  │ 󰛦 routeTree.gen.ts
+  │ 󰛦 supabase.ts
+  └ 󰛦 vite-env.d.ts
+  󰌞 .eslintrc.cjs
+   .gitignore
+   components.json
+   index.html
+   ✗ package-lock.json
+   ✗ package.json
+  󰌞 postcss.config.js
+   README.md
+  󱏿 tailwind.config.js
+   tsconfig.json
+   tsconfig.node.json
+  󰛦 vite.config.ts

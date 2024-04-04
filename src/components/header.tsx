@@ -14,7 +14,7 @@ import {
 
 export const Header = () => {
   return (
-    <header className="w-full border-b h-16 flex items-center px-4 justify-between">
+    <header className="w-full fixed background-blur-4 z-100000 border-b h-16 flex items-center px-4 justify-between">
       <div>
         <span className="font-semibold">sample</span>
         <span className="font-semibold">/market</span>
