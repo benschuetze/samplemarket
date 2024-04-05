@@ -14,7 +14,7 @@ import {
 
 export const Header = () => {
   return (
-    <header className="relative w-full fixed top-0 left-0 right-0 z-50">
+    <header className="relative w-full !fixed top-0 left-0 right-0 z-50 backdrop-blur">
       <div
         className="w-full max-w-screen-xl mx-auto px-4"
         style={{ maxWidth: "1340px" }}
@@ -41,7 +41,7 @@ export const Header = () => {
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem className="!bg-transparent">
-                <Link to="/" legacyBehavior passHref>
+                <Link to="/upload" legacyBehavior passHref>
                   <NavigationMenuLink
                     className={`
                       ${navigationMenuTriggerStyle()} 
