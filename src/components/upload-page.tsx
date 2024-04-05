@@ -7,19 +7,15 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { useState } from "react";
 export const UploadPage = () => {
+  const [loops, setLoops] = useState<Array<File>>([]);
+  const [oneShots, setOneShots] = useState<Array<File>>([]);
+
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
-      <Card className="w-[350px]">
+      <Card className="w-full mt-24">
         <CardHeader>
           <CardTitle>Create project</CardTitle>
           <CardDescription>
@@ -30,22 +26,28 @@ export const UploadPage = () => {
           <form>
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="name">Name</Label>
-                <Input id="name" placeholder="Name of your project" />
+                <Label htmlFor="name">One Shots</Label>
+                <Card className="min-h-32  px-3  py-2">
+                  {oneShots.length <= 0 ? (
+                    <span className="text-sm text-zinc-400">
+                      Drag and drop your one shot samples here...
+                    </span>
+                  ) : (
+                    <h1>Jetzt gehts aber los hier!</h1>
+                  )}
+                </Card>
               </div>
               <div className="flex flex-col space-y-1.5">
-                <Label htmlFor="framework">Framework</Label>
-                <Select>
-                  <SelectTrigger id="framework">
-                    <SelectValue placeholder="Select" />
-                  </SelectTrigger>
-                  <SelectContent position="popper">
-                    <SelectItem value="next">Next.js</SelectItem>
-                    <SelectItem value="sveltekit">SvelteKit</SelectItem>
-                    <SelectItem value="astro">Astro</SelectItem>
-                    <SelectItem value="nuxt">Nuxt.js</SelectItem>
-                  </SelectContent>
-                </Select>
+                <Label htmlFor="framework">Loops</Label>
+                <Card className="min-h-32 px-3 py-2">
+                  {loops.length <= 0 ? (
+                    <span className=" text-sm text-zinc-400">
+                      Drag and drop your loops here...
+                    </span>
+                  ) : (
+                    <h1>Jetzt gehts aber los hier!</h1>
+                  )}
+                </Card>
               </div>
             </div>
           </form>
