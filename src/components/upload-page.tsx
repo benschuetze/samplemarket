@@ -9,6 +9,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
+
 export const UploadPage = () => {
   //
   const [loops, setLoops] = useState<Array<File>>([]);
@@ -17,9 +18,18 @@ export const UploadPage = () => {
   const loopsRef = useRef(null);
   const oneShotsRef = useRef(null);
 
+  const onUpload = (files: Array<File>) => {
+    console.log(files);
+  };
+
   const handleDrop = (e: Event, container: string) => {
     e.preventDefault();
     e.stopPropagation();
+    const { files } = e.dataTransfer;
+
+    if (files && files.length) {
+      onUpload(files);
+    }
   };
 
   const handleDragover = (e: Event, container: string) => {
