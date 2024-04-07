@@ -8,12 +8,22 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
+import { StringifyOptions } from "querystring";
 import { useEffect, useRef, useState } from "react";
+
+type RejectedSample = {
+  file: File;
+  rejectionCause: string;
+  type: string;
+};
 
 export const UploadPage = () => {
   //
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
+  const [rejectedSamples, setRejectedSamples] = useState<Array<RejectedSample>>(
+    [],
+  );
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -28,10 +38,43 @@ export const UploadPage = () => {
     e.preventDefault();
     e.stopPropagation();
     let audioFiles: File[] = [];
-    console.log("files hier schau spast: ", e.dataTransfer);
     if (e.dataTransfer) {
       const { files } = e.dataTransfer || { files: [] };
+      // check the duration of the sample and prevent it from being uploaded if its too long
       audioFiles = [...files];
+      audioFiles.forEach((file) => {
+        //reject all files that are mp3 format
+        if (file.type.includes("mp3") || file.type.includes("mpeg")) {
+          audioFiles.splice(audioFiles.indexOf(file), 1);
+          setRejectedSamples((prev) => [
+            ...prev,
+            { file, rejectionCause: "mp3", type: container },
+          ]);
+        }
+        console.log("file here:", file);
+        //check duration, remove too long samples and save removed sample name
+        const fileReader = new FileReader();
+        const audioContext = new (window.AudioContext ||
+          (window as any).webkitAudioContext)();
+        fileReader.onload = () => {
+          const arrayBuffer = fileReader.result as ArrayBuffer;
+          audioContext.decodeAudioData(
+            arrayBuffer,
+            (buffer) => {
+              const duration = buffer.duration;
+              if (duration > 5) {
+                audioFiles.splice(audioFiles.indexOf(file), 1);
+                setRejectedSamples((prev) => [...prev, { file }]);
+              }
+              console.log("BUFFER: ", buffer);
+            },
+            (error) => {
+              console.log("ERROR ERROR ERROR", error);
+            },
+          );
+        };
+        fileReader.readAsArrayBuffer(file);
+      });
     }
 
     if (audioFiles && audioFiles.length) {
@@ -39,7 +82,7 @@ export const UploadPage = () => {
     }
   };
 
-  const handleDragover = (e: Event, container: string) => {
+  const handleDragover = (e: DragEvent, container: string) => {
     e.preventDefault();
     e.stopPropagation();
   };
