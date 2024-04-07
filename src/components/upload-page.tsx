@@ -23,16 +23,16 @@ export const UploadPage = () => {
   const [rejectedSamples, setRejectedSamples] = useState<Array<RejectedSample>>(
     [],
   );
-  const [testState, setTestState] = useState<number>(0);
 
-  const [testState2, setTestState2] = useState<number>(0);
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
 
   const onUpload = (files: Array<File>, container: string) => {
-    console.log(files);
+    console.log("files to uload: ", files);
     //@ts-ignore
     if (container === "loops") setLoops((prev) => [...prev, files]);
+    //@ts-ignore
+    if (container === "oneShots") setOneShots((prev) => [...prev, files]);
   };
 
   const handleDrop = (e: DragEvent, container: string) => {
@@ -44,7 +44,6 @@ export const UploadPage = () => {
       const { files } = e.dataTransfer || { files: [] };
       // check the duration of the sample and prevent it from being uploaded if it's too long
       audioFiles = [...files];
-      console.log("audio files: ", audioFiles);
       audioFiles.forEach((file) => {
         // reject all files that are mp3 format
         if (file.type.includes("mp3") || file.type.includes("mpeg")) {
@@ -53,11 +52,10 @@ export const UploadPage = () => {
             ...prev,
             { file, rejectionCause: "mp3", type: container },
           ]);
-          setTestState((prev) => prev + 1);
           return;
         }
-        console.log("file here:", file);
-        // check duration, remove too long samples and save removed sample name
+
+        // check duration, remove too long samples and save removed sample
         const fileReader = new FileReader();
         const audioContext = new (window.AudioContext ||
           (window as any).webkitAudioContext)();
@@ -74,7 +72,6 @@ export const UploadPage = () => {
                   { file, rejectionCause: "length", type: container },
                 ]);
               }
-              console.log("BUFFER: ", buffer);
             },
             (error) => {
               console.log("ERROR ERROR ERROR", error);
@@ -132,14 +129,6 @@ export const UploadPage = () => {
   useEffect(() => {
     console.log("rejected samples now: ", rejectedSamples);
   }, [rejectedSamples]);
-
-  useEffect(() => {
-    console.log("test state: ", testState);
-  }, [testState]);
-
-  useEffect(() => {
-    console.log("test state: ", testState2);
-  }, [testState2]);
 
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
