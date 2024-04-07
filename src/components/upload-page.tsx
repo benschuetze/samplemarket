@@ -27,13 +27,12 @@ export const UploadPage = () => {
   const handleDrop = (e: DragEvent, container: string) => {
     e.preventDefault();
     e.stopPropagation();
-    let audioFiles: Array<File> = [];
+    let audioFiles: File[] = [];
+    console.log("files hier schau spast: ", e.dataTransfer);
     if (e.dataTransfer) {
-      const { files } = e.dataTransfer || [];
-      const filesAsArray = [...files]; // files is a FileList here, so we have to convert it for ease of use
-      audioFiles = filesAsArray;
+      const { files } = e.dataTransfer || { files: [] };
+      audioFiles = [...files];
     }
-    console.log("file list: ", audioFiles);
 
     if (audioFiles && audioFiles.length) {
       onUpload(audioFiles, container);
@@ -46,7 +45,7 @@ export const UploadPage = () => {
   };
 
   useEffect(() => {
-    // this useEffect is kept verbose and not functionalized on purpose for
+    //useEffect kept verose and not functionalized for readability
     if (loopsRef.current && oneShotsRef.current) {
       loopsRef.current.addEventListener("dragover", (e: DragEvent) =>
         handleDragover(e, "loops"),
@@ -60,24 +59,23 @@ export const UploadPage = () => {
       oneShotsRef.current.addEventListener("drop", (e: DragEvent) =>
         handleDrop(e, "oneShots"),
       );
-
-      return () => {
-        if (loopsRef.current && oneShotsRef.current) {
-          loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>
-            handleDragover(e, "loops"),
-          );
-          loopsRef.current.removeEventListener("drop", (e: DragEvent) =>
-            handleDrop(e, "loops"),
-          );
-          oneShotsRef.current.removeEventListener("dragover", (e: DragEvent) =>
-            handleDragover(e, "oneShots"),
-          );
-          oneShotsRef.current.removeEventListener("drop", (e: DragEvent) =>
-            handleDrop(e, "oneShots"),
-          );
-        }
-      };
     }
+    return () => {
+      if (loopsRef.current && oneShotsRef.current) {
+        loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>
+          handleDragover(e, "loops"),
+        );
+        loopsRef.current.removeEventListener("drop", (e: DragEvent) =>
+          handleDrop(e, "loops"),
+        );
+        oneShotsRef.current.removeEventListener("dragover", (e: DragEvent) =>
+          handleDragover(e, "oneShots"),
+        );
+        oneShotsRef.current.removeEventListener("drop", (e: DragEvent) =>
+          handleDrop(e, "oneShots"),
+        );
+      }
+    };
   }, []);
 
   return (
