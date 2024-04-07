@@ -8,8 +8,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { StringifyOptions } from "querystring";
-import { useEffect, useRef, useState } from "react";
+import { useDebugValue, useEffect, useRef, useState } from "react";
 
 type RejectedSample = {
   file: File;
@@ -24,7 +23,9 @@ export const UploadPage = () => {
   const [rejectedSamples, setRejectedSamples] = useState<Array<RejectedSample>>(
     [],
   );
+  const [testState, setTestState] = useState<number>(0);
 
+  const [testState2, setTestState2] = useState<number>(0);
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
 
@@ -37,22 +38,26 @@ export const UploadPage = () => {
   const handleDrop = (e: DragEvent, container: string) => {
     e.preventDefault();
     e.stopPropagation();
+    e.stopImmediatePropagation();
     let audioFiles: File[] = [];
     if (e.dataTransfer) {
       const { files } = e.dataTransfer || { files: [] };
-      // check the duration of the sample and prevent it from being uploaded if its too long
+      // check the duration of the sample and prevent it from being uploaded if it's too long
       audioFiles = [...files];
+      console.log("audio files: ", audioFiles);
       audioFiles.forEach((file) => {
-        //reject all files that are mp3 format
+        // reject all files that are mp3 format
         if (file.type.includes("mp3") || file.type.includes("mpeg")) {
           audioFiles.splice(audioFiles.indexOf(file), 1);
           setRejectedSamples((prev) => [
             ...prev,
             { file, rejectionCause: "mp3", type: container },
           ]);
+          setTestState((prev) => prev + 1);
+          return;
         }
         console.log("file here:", file);
-        //check duration, remove too long samples and save removed sample name
+        // check duration, remove too long samples and save removed sample name
         const fileReader = new FileReader();
         const audioContext = new (window.AudioContext ||
           (window as any).webkitAudioContext)();
@@ -64,7 +69,10 @@ export const UploadPage = () => {
               const duration = buffer.duration;
               if (duration > 5) {
                 audioFiles.splice(audioFiles.indexOf(file), 1);
-                setRejectedSamples((prev) => [...prev, { file }]);
+                setRejectedSamples((prev) => [
+                  ...prev,
+                  { file, rejectionCause: "length", type: container },
+                ]);
               }
               console.log("BUFFER: ", buffer);
             },
@@ -121,6 +129,18 @@ export const UploadPage = () => {
     };
   }, []);
 
+  useEffect(() => {
+    console.log("rejected samples now: ", rejectedSamples);
+  }, [rejectedSamples]);
+
+  useEffect(() => {
+    console.log("test state: ", testState);
+  }, [testState]);
+
+  useEffect(() => {
+    console.log("test state: ", testState2);
+  }, [testState2]);
+
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
       <Card className="w-full mt-24">
@@ -162,7 +182,17 @@ export const UploadPage = () => {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline">Cancel</Button>
-          <Button>Deploy</Button>
+          <Button
+            onClick={() => {
+              setTestState2((prev) => {
+                const oldState = prev;
+                const newState = oldState + 1;
+                return newState;
+              });
+            }}
+          >
+            Deploy
+          </Button>
         </CardFooter>
       </Card>
     </div>
