@@ -9,7 +9,7 @@ export const ExploreAllContainer = () => {
   return (
     <div
       className="flex flex-wrap  mx-auto mt-16"
-      style={{ maxWidth: "1340px" }}
+      style={{ maxWidth: "1400px" }}
     >
       <SampleBundle
         hoveredCardId={hoveredCardId}

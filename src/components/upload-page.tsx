@@ -15,20 +15,28 @@ export const UploadPage = () => {
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
 
-  const loopsRef = useRef(null);
-  const oneShotsRef = useRef(null);
+  const loopsRef = useRef<HTMLDivElement>(null);
+  const oneShotsRef = useRef<HTMLDivElement>(null);
 
-  const onUpload = (files: Array<File>) => {
+  const onUpload = (files: Array<File>, container: string) => {
     console.log(files);
+    //@ts-ignore
+    if (container === "loops") setLoops((prev) => [...prev, files]);
   };
 
-  const handleDrop = (e: Event, container: string) => {
+  const handleDrop = (e: DragEvent, container: string) => {
     e.preventDefault();
     e.stopPropagation();
-    const { files } = e.dataTransfer;
+    let audioFiles: Array<File> = [];
+    if (e.dataTransfer) {
+      const { files } = e.dataTransfer || [];
+      const filesAsArray = [...files]; // files is a FileList here, so we have to convert it for ease of use
+      audioFiles = filesAsArray;
+    }
+    console.log("file list: ", audioFiles);
 
-    if (files && files.length) {
-      onUpload(files);
+    if (audioFiles && audioFiles.length) {
+      onUpload(audioFiles, container);
     }
   };
 
@@ -38,33 +46,38 @@ export const UploadPage = () => {
   };
 
   useEffect(() => {
-    loopsRef.current.addEventListener("dragover", (e: Event) =>
-      handleDragover(e, "loops"),
-    );
-    loopsRef.current.addEventListener("drop", (e: Event) =>
-      handleDrop(e, "loops"),
-    );
-    oneShotsRef.current.addEventListener("dragover", (e: Event) =>
-      handleDragover(e, "oneShots"),
-    );
-    oneShotsRef.current.addEventListener("drop", (e: Event) =>
-      handleDrop(e, "oneShots"),
-    );
-
-    return () => {
-      loopsRef.current.removeEventListener("dragover", (e: Event) =>
+    // this useEffect is kept verbose and not functionalized on purpose for
+    if (loopsRef.current && oneShotsRef.current) {
+      loopsRef.current.addEventListener("dragover", (e: DragEvent) =>
         handleDragover(e, "loops"),
       );
-      loopsRef.current.removeEventListener("drop", (e: Event) =>
+      loopsRef.current.addEventListener("drop", (e: DragEvent) =>
         handleDrop(e, "loops"),
       );
-      oneShotsRef.current.removeEventListener("dragover", (e: Event) =>
+      oneShotsRef.current.addEventListener("dragover", (e: DragEvent) =>
         handleDragover(e, "oneShots"),
       );
-      oneShotsRef.current.removeEventListener("drop", (e: Event) =>
+      oneShotsRef.current.addEventListener("drop", (e: DragEvent) =>
         handleDrop(e, "oneShots"),
       );
-    };
+
+      return () => {
+        if (loopsRef.current && oneShotsRef.current) {
+          loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>
+            handleDragover(e, "loops"),
+          );
+          loopsRef.current.removeEventListener("drop", (e: DragEvent) =>
+            handleDrop(e, "loops"),
+          );
+          oneShotsRef.current.removeEventListener("dragover", (e: DragEvent) =>
+            handleDragover(e, "oneShots"),
+          );
+          oneShotsRef.current.removeEventListener("drop", (e: DragEvent) =>
+            handleDrop(e, "oneShots"),
+          );
+        }
+      };
+    }
   }, []);
 
   return (
