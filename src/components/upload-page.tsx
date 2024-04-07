@@ -171,17 +171,7 @@ export const UploadPage = () => {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline">Cancel</Button>
-          <Button
-            onClick={() => {
-              setTestState2((prev) => {
-                const oldState = prev;
-                const newState = oldState + 1;
-                return newState;
-              });
-            }}
-          >
-            Deploy
-          </Button>
+          <Button>Deploy</Button>
         </CardFooter>
       </Card>
     </div>
