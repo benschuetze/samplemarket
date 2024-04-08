@@ -1,3 +1,4 @@
+import { UploadedSample } from "./uploaded-sample";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -29,10 +30,9 @@ export const UploadPage = () => {
 
   const onUpload = (files: Array<File>, container: string) => {
     console.log("files to uload: ", files);
+    if (container === "loops") setLoops((prev) => [...prev, ...files]);
     //@ts-ignore
-    if (container === "loops") setLoops((prev) => [...prev, files]);
-    //@ts-ignore
-    if (container === "oneShots") setOneShots((prev) => [...prev, files]);
+    if (container === "oneShots") setOneShots((prev) => [...prev, ...files]);
   };
 
   const handleDrop = (e: DragEvent, container: string) => {
@@ -130,6 +130,10 @@ export const UploadPage = () => {
     console.log("rejected samples now: ", rejectedSamples);
   }, [rejectedSamples]);
 
+  useEffect(() => {
+    console.log("one shots now: ", oneShots);
+  }, [oneShots]);
+
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
       <Card className="w-full mt-24">
@@ -150,7 +154,9 @@ export const UploadPage = () => {
                       Drag and drop your one shot samples here...
                     </span>
                   ) : (
-                    <h1>Jetzt gehts aber los hier!</h1>
+                    oneShots.map((item, i) => {
+                      return <UploadedSample key={i} />;
+                    })
                   )}
                 </Card>
               </div>
