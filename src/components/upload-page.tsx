@@ -29,10 +29,27 @@ export const UploadPage = () => {
   const oneShotsRef = useRef<HTMLDivElement>(null);
 
   const onUpload = (files: Array<File>, container: string) => {
-    console.log("files to uload: ", files);
-    if (container === "loops") setLoops((prev) => [...prev, ...files]);
+    console.log("files to upload: ", files);
+
+    if (container === "loops") {
+      setLoops((prev) => {
+        const uniqueFiles = files.filter(
+          (file) => !prev.some((prevFile) => prevFile.name === file.name),
+        );
+        return [...prev, ...uniqueFiles];
+      });
+    }
+
     //@ts-ignore
-    if (container === "oneShots") setOneShots((prev) => [...prev, ...files]);
+    if (container === "oneShots") {
+      setOneShots((prev) => {
+        const uniqueFiles = files.filter(
+          (file) => !prev.some((prevFile) => prevFile.name === file.name),
+        );
+        const newState = [...prev, ...uniqueFiles];
+        return newState;
+      });
+    }
   };
 
   const handleDrop = (e: DragEvent, container: string) => {
@@ -148,15 +165,20 @@ export const UploadPage = () => {
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="name">One Shots</Label>
-                <Card ref={oneShotsRef} className="min-h-32  px-3  py-2">
+                <Card
+                  ref={oneShotsRef}
+                  className={`min-h-32 px-3 py-2 transition-all duration-150 `}
+                >
                   {oneShots.length <= 0 ? (
                     <span className="text-sm text-zinc-400">
                       Drag and drop your one shot samples here...
                     </span>
                   ) : (
-                    oneShots.map((item, i) => {
-                      return <UploadedSample key={i} />;
-                    })
+                    <div className="flex flex-wrap mx-auto ">
+                      {oneShots.map((file, i) => {
+                        return <UploadedSample key={i} name={file.name} />;
+                      })}
+                    </div>
                   )}
                 </Card>
               </div>
