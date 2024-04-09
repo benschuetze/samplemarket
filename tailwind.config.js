@@ -52,6 +52,9 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
       },
+      transitionProperty: {
+        "height": "height"
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",

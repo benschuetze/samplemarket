@@ -167,7 +167,7 @@ export const UploadPage = () => {
                 <Label htmlFor="name">One Shots</Label>
                 <Card
                   ref={oneShotsRef}
-                  className={`min-h-32 px-3 py-2 transition-all duration-150 `}
+                  className={`min-h-32 px-3 py-2 transition-height duration-500 `}
                 >
                   {oneShots.length <= 0 ? (
                     <span className="text-sm text-zinc-400">
@@ -176,7 +176,13 @@ export const UploadPage = () => {
                   ) : (
                     <div className="flex flex-wrap mx-auto ">
                       {oneShots.map((file, i) => {
-                        return <UploadedSample key={i} name={file.name} />;
+                        return (
+                          <UploadedSample
+                            key={i}
+                            name={file.name}
+                            type="oneShot"
+                          />
+                        );
                       })}
                     </div>
                   )}
@@ -190,7 +196,17 @@ export const UploadPage = () => {
                       Drag and drop your loops here...
                     </span>
                   ) : (
-                    <h1>Jetzt gehts aber los hier!</h1>
+                    <div className="flex flex-wrap mx-auto ">
+                      {loops.map((file, i) => {
+                        return (
+                          <UploadedSample
+                            key={i}
+                            name={file.name}
+                            type="loop"
+                          />
+                        );
+                      })}
+                    </div>
                   )}
                 </Card>
               </div>
