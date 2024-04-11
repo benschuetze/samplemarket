@@ -1,4 +1,5 @@
 import { UploadedSample } from "./uploaded-sample";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -9,7 +10,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useDebugValue, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Toaster } from "sonner";
 
 type RejectedSample = {
   file: File;
@@ -21,9 +23,6 @@ export const UploadPage = () => {
   //
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
-  const [rejectedSamples, setRejectedSamples] = useState<Array<RejectedSample>>(
-    [],
-  );
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -52,51 +51,80 @@ export const UploadPage = () => {
     }
   };
 
-  const handleDrop = (e: DragEvent, container: string) => {
+  const readFileAsync = async (
+    file: File,
+    audioFiles: File[],
+    container: string,
+  ) => {
+    // check the duration of the sample and prevent it from being uploaded if it's too long
+    if (file.type.includes("mp3") || file.type.includes("mpeg")) {
+      toast(`${file.name} rejected. Mp3 files are not accepted.`);
+      audioFiles.splice(audioFiles.indexOf(file), 1);
+      return;
+    }
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      const audioContext = new (window.AudioContext ||
+        (window as any).webkitAudioContext)();
+
+      fileReader.onload = async () => {
+        const arrayBuffer = fileReader.result as ArrayBuffer;
+        await audioContext.decodeAudioData(
+          arrayBuffer,
+          (buffer) => {
+            const duration = buffer.duration;
+            if (duration > 5 && container === "oneShots") {
+              toast(
+                `${file.name} rejected. One Shot samples have a maximal lenght of 5 seconds.`,
+              );
+              audioFiles.splice(audioFiles.indexOf(file), 1);
+            }
+            if (
+              (duration > 20 && container === "loops") ||
+              (duration < 1 && container === "loops")
+            ) {
+              toast(
+                `${file.name} rejected. Loops should be between 1 and 20 seconds long.`,
+              );
+              audioFiles.splice(audioFiles.indexOf(file), 1);
+            }
+          },
+          (error) => {
+            console.error("ERROR ERROR ERROR", error);
+          },
+        );
+        resolve({ succes: true });
+      };
+
+      fileReader.onerror = () => {
+        reject({ error: fileReader.error, success: false });
+      };
+
+      fileReader.readAsArrayBuffer(file);
+    });
+  };
+
+  //
+
+  //this can be refactored hardcore and i will but only when it all works
+  const handleDrop = async (e: DragEvent, container: string) => {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
     let audioFiles: File[] = [];
     if (e.dataTransfer) {
       const { files } = e.dataTransfer || { files: [] };
-      // check the duration of the sample and prevent it from being uploaded if it's too long
       audioFiles = [...files];
-      audioFiles.forEach((file) => {
-        // reject all files that are mp3 format
-        if (file.type.includes("mp3") || file.type.includes("mpeg")) {
-          audioFiles.splice(audioFiles.indexOf(file), 1);
-          setRejectedSamples((prev) => [
-            ...prev,
-            { file, rejectionCause: "mp3", type: container },
-          ]);
-          return;
+      const processAudioFiles = async () => {
+        for (const file of files) {
+          try {
+            await readFileAsync(file, audioFiles, container);
+          } catch (e) {
+            console.error("error reading file: ", e);
+          }
         }
-
-        // check duration, remove too long samples and save removed sample
-        const fileReader = new FileReader();
-        const audioContext = new (window.AudioContext ||
-          (window as any).webkitAudioContext)();
-        fileReader.onload = () => {
-          const arrayBuffer = fileReader.result as ArrayBuffer;
-          audioContext.decodeAudioData(
-            arrayBuffer,
-            (buffer) => {
-              const duration = buffer.duration;
-              if (duration > 5) {
-                audioFiles.splice(audioFiles.indexOf(file), 1);
-                setRejectedSamples((prev) => [
-                  ...prev,
-                  { file, rejectionCause: "length", type: container },
-                ]);
-              }
-            },
-            (error) => {
-              console.log("ERROR ERROR ERROR", error);
-            },
-          );
-        };
-        fileReader.readAsArrayBuffer(file);
-      });
+      };
+      await processAudioFiles();
     }
 
     if (audioFiles && audioFiles.length) {
@@ -104,7 +132,7 @@ export const UploadPage = () => {
     }
   };
 
-  const handleDragover = (e: DragEvent, container: string) => {
+  const handleDragover = (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
   };
@@ -113,13 +141,13 @@ export const UploadPage = () => {
     //useEffect kept verose and not functionalized for readability
     if (loopsRef.current && oneShotsRef.current) {
       loopsRef.current.addEventListener("dragover", (e: DragEvent) =>
-        handleDragover(e, "loops"),
+        handleDragover(e),
       );
       loopsRef.current.addEventListener("drop", (e: DragEvent) =>
         handleDrop(e, "loops"),
       );
       oneShotsRef.current.addEventListener("dragover", (e: DragEvent) =>
-        handleDragover(e, "oneShots"),
+        handleDragover(e),
       );
       oneShotsRef.current.addEventListener("drop", (e: DragEvent) =>
         handleDrop(e, "oneShots"),
@@ -144,12 +172,11 @@ export const UploadPage = () => {
   }, []);
 
   useEffect(() => {
-    console.log("rejected samples now: ", rejectedSamples);
-  }, [rejectedSamples]);
-
-  useEffect(() => {
     console.log("one shots now: ", oneShots);
   }, [oneShots]);
+  useEffect(() => {
+    console.log("loops now: ", loops);
+  }, [loops]);
 
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
@@ -218,6 +245,7 @@ export const UploadPage = () => {
           <Button>Deploy</Button>
         </CardFooter>
       </Card>
+      <Toaster />
     </div>
   );
 };
