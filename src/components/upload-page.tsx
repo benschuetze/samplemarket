@@ -1,3 +1,5 @@
+import JSZip from "jszip";
+import { supabase } from "@/supabase";
 import { UploadedSample } from "./uploaded-sample";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -12,13 +14,6 @@ import {
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
-
-type RejectedSample = {
-  file: File;
-  rejectionCause: string;
-  type: string;
-};
-
 export const UploadPage = () => {
   //
   const [loops, setLoops] = useState<Array<File>>([]);
@@ -51,17 +46,48 @@ export const UploadPage = () => {
     }
   };
 
+  //zippen funktioniert so schon, nur das zusammenbauen der ordner ist falsch
+  const zipFilesToUpload = async () => {
+    const zip = new JSZip();
+    const loopsFolder = zip.folder("Loops");
+    const oneShotsFolder = zip.folder("one-Shots");
+    for (let i = 0; i < loops.length; i++) {
+      const file: File = loops[i];
+      // this call will create photos/README
+      if (loopsFolder) loopsFolder.file(`${file.name}`, file);
+    }
+    for (let i = 0; i < oneShots.length; i++) {
+      const file = oneShots[i];
+      if (oneShotsFolder) oneShotsFolder.file(`${file.name}`, file);
+    }
+
+    const zipAsUinst8Array = await zip.generateAsync({ type: "uint8array" });
+    // Convert Uint8Array to Blob
+    const blob = new Blob([zipAsUinst8Array], {
+      type: "application/octet-stream",
+    });
+
+    // Create a URL for the Blob
+    console.log("blob : ", blob);
+
+    console.log("zip file: ", zip);
+
+    const { data, error } = await supabase.storage
+      .from("zip-compressed-sample-packs")
+      .upload(`public/${Math.random()}.zip`, blob, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+    if (data) console.log("data by supabase upload: ", data);
+    if (error) console.log("error supabase upload: ", error);
+  };
+
   const readFileAsync = async (
     file: File,
     audioFiles: File[],
     container: string,
   ) => {
     // check the duration of the sample and prevent it from being uploaded if it's too long
-    if (file.type.includes("mp3") || file.type.includes("mpeg")) {
-      toast(`${file.name} rejected. Mp3 files are not accepted.`);
-      audioFiles.splice(audioFiles.indexOf(file), 1);
-      return;
-    }
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
       const audioContext = new (window.AudioContext ||
@@ -104,8 +130,6 @@ export const UploadPage = () => {
     });
   };
 
-  //
-
   //this can be refactored hardcore and i will but only when it all works
   const handleDrop = async (e: DragEvent, container: string) => {
     e.preventDefault();
@@ -137,6 +161,11 @@ export const UploadPage = () => {
     e.stopPropagation();
   };
 
+  const handleBundleUpload = () => {
+    zipFilesToUpload();
+    console.log("samples to upload", { loops, oneShots });
+  };
+
   useEffect(() => {
     //useEffect kept verose and not functionalized for readability
     if (loopsRef.current && oneShotsRef.current) {
@@ -156,13 +185,13 @@ export const UploadPage = () => {
     return () => {
       if (loopsRef.current && oneShotsRef.current) {
         loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>
-          handleDragover(e, "loops"),
+          handleDragover(e),
         );
         loopsRef.current.removeEventListener("drop", (e: DragEvent) =>
           handleDrop(e, "loops"),
         );
         oneShotsRef.current.removeEventListener("dragover", (e: DragEvent) =>
-          handleDragover(e, "oneShots"),
+          handleDragover(e),
         );
         oneShotsRef.current.removeEventListener("drop", (e: DragEvent) =>
           handleDrop(e, "oneShots"),
@@ -174,6 +203,7 @@ export const UploadPage = () => {
   useEffect(() => {
     console.log("one shots now: ", oneShots);
   }, [oneShots]);
+
   useEffect(() => {
     console.log("loops now: ", loops);
   }, [loops]);
@@ -242,10 +272,10 @@ export const UploadPage = () => {
         </CardContent>
         <CardFooter className="flex justify-between">
           <Button variant="outline">Cancel</Button>
-          <Button>Deploy</Button>
+          <Button onClick={() => handleBundleUpload()}>Upload</Button>
         </CardFooter>
       </Card>
-      <Toaster />
+      <Toaster theme="dark" style={{ borderColor: "red !important" }} />
     </div>
   );
 };
