@@ -217,7 +217,7 @@ export const UploadPage = () => {
 
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
-      <Card className="w-full mt-24">
+      <Card className="max-w-5xl mt-24">
         <CardHeader>
           <CardTitle>Upload Bundle</CardTitle>
           <CardDescription>
@@ -300,8 +300,22 @@ export const UploadPage = () => {
           </form>
         </CardContent>
         <CardFooter className="flex justify-between">
-          <Button variant="outline">Cancel</Button>
-          <Button onClick={() => handleBundleUpload()}>Upload</Button>
+          <Button
+            variant="outline"
+            className=" 
+            !h-10 hover:!bg-[#cf3e67]/30
+              hover:!border-[#cf3e67]/50 h-8 flex items-center"
+          >
+            Cancel
+          </Button>
+          <Button
+            variant="outline"
+            className=" !border-[#3ecf8e]/20 
+            !h-10 hover:!bg-[#3ecf8e]/30
+              hover:!border-[#3ecf8e]/50 h-8 flex items-center"
+          >
+            Upload
+          </Button>
         </CardFooter>
       </Card>
       <Toaster theme="dark" style={{ borderColor: "red !important" }} />
