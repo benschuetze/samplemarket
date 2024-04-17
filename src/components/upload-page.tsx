@@ -3,6 +3,7 @@ import { supabase } from "@/supabase";
 import { UploadedSample } from "./uploaded-sample";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
+import { Input } from "./ui/input";
 import {
   Card,
   CardContent,
@@ -14,6 +15,7 @@ import {
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "sonner";
+import { Textarea } from "./ui/textarea";
 export const UploadPage = () => {
   //
   const [loops, setLoops] = useState<Array<File>>([]);
@@ -88,6 +90,11 @@ export const UploadPage = () => {
     container: string,
   ) => {
     // check the duration of the sample and prevent it from being uploaded if it's too long
+    if (file.type.includes("mp3") || file.type.includes("mpeg")) {
+      toast(`${file.name} rejected. Mp3 files are not accepted.`);
+      audioFiles.splice(audioFiles.indexOf(file), 1);
+      return;
+    }
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
       const audioContext = new (window.AudioContext ||
@@ -212,7 +219,7 @@ export const UploadPage = () => {
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
       <Card className="w-full mt-24">
         <CardHeader>
-          <CardTitle>Create project</CardTitle>
+          <CardTitle>Upload Bundle</CardTitle>
           <CardDescription>
             Deploy your new project in one-click.
           </CardDescription>
@@ -220,14 +227,33 @@ export const UploadPage = () => {
         <CardContent>
           <form>
             <div className="grid w-full items-center gap-4">
+              <Label htmlFor="name" className="-mb-2 !w-1/2">
+                Name
+              </Label>
+              <div className="flex">
+                <Input
+                  className="border-transparent focus:border-transparent focus:!ring-0"
+                  style={{ outline: "none !important" }}
+                />
+                <Input className="opacity-0 cursor-default pointer-events-none" />
+              </div>
+              <Label htmlFor="name" className="-mb-2 !w-1/2">
+                Tags
+              </Label>
+              <Textarea
+                className="border-transparent focus:border-transparent focus:!ring-0 resize-none"
+                style={{ outline: "none !important" }}
+                placeholder="Add Tags that describe the sound of your bundle..."
+              />
+
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="name">One Shots</Label>
                 <Card
                   ref={oneShotsRef}
-                  className={`min-h-32 px-3 py-2 transition-height duration-500 `}
+                  className={`min-h-32 px-3 py-2 transition-height duration-500 relative ${!(oneShots.length > 0) && "hover:!bg-zinc-900 "}`}
                 >
                   {oneShots.length <= 0 ? (
-                    <span className="text-sm text-zinc-400">
+                    <span className="text-sm text-zinc-400 absolute cursor-default w-full text-center -ml-3 mt-11">
                       Drag and drop your one shot samples here...
                     </span>
                   ) : (
@@ -247,9 +273,12 @@ export const UploadPage = () => {
               </div>
               <div className="flex flex-col space-y-1.5">
                 <Label htmlFor="framework">Loops</Label>
-                <Card ref={loopsRef} className="min-h-32 px-3 py-2">
+                <Card
+                  ref={loopsRef}
+                  className={`min-h-32 px-3 py-2 relative ${!(loops.length > 0) && "hover:!bg-zinc-900 "}`}
+                >
                   {loops.length <= 0 ? (
-                    <span className=" text-sm text-zinc-400">
+                    <span className=" text-sm text-zinc-400 w-full absolute text-center -ml-3 mt-11 cursor-default ">
                       Drag and drop your loops here...
                     </span>
                   ) : (
