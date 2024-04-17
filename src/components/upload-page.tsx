@@ -106,7 +106,7 @@ export const UploadPage = () => {
             const duration = buffer.duration;
             if (duration > 5 && container === "oneShots") {
               toast(
-                `${file.name} rejected. One Shot samples have a maximal lenght of 5 seconds.`,
+                `${file.name} rejected. One Shot samples have a maximal length of 5 seconds.`,
               );
               audioFiles.splice(audioFiles.indexOf(file), 1);
             }
