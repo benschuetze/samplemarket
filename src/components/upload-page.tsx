@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
 export const UploadPage = () => {
   //
@@ -23,6 +23,8 @@ export const UploadPage = () => {
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
+  const tagsRef = useRef<HTMLTextAreaElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
 
   const onUpload = (files: Array<File>, container: string) => {
     console.log("files to upload: ", files);
@@ -46,6 +48,10 @@ export const UploadPage = () => {
         return newState;
       });
     }
+  };
+
+  const handleSetBundleTags = (char: string) => {
+    console.log("tag change char : ", char);
   };
 
   //zippen funktioniert so schon, nur das zusammenbauen der ordner ist falsch
@@ -73,15 +79,7 @@ export const UploadPage = () => {
     console.log("blob : ", blob);
 
     console.log("zip file: ", zip);
-
-    const { data, error } = await supabase.storage
-      .from("zip-compressed-sample-packs")
-      .upload(`public/${Math.random()}.zip`, blob, {
-        cacheControl: "3600",
-        upsert: false,
-      });
-    if (data) console.log("data by supabase upload: ", data);
-    if (error) console.log("error supabase upload: ", error);
+    return blob;
   };
 
   const readFileAsync = async (
@@ -168,9 +166,26 @@ export const UploadPage = () => {
     e.stopPropagation();
   };
 
-  const handleBundleUpload = () => {
-    zipFilesToUpload();
-    console.log("samples to upload", { loops, oneShots });
+  const buildTagsFromString = () => {
+    const tagsAsString = tagsRef.current?.value;
+
+    return tagsAsString?.split(" ").filter((tag) => tag !== "") || [];
+  };
+
+  const handleBundleUpload = async () => {
+    const blobOfZippedAudioFiles = await zipFilesToUpload();
+    const bundleName = nameInputRef.current?.value;
+    const tags = buildTagsFromString();
+    console.log("builded tags: ", tags);
+    //  const { data, error } = await supabase.storage
+    //   .from("zip-compressed-sample-packs")
+    //  .upload(`public/${Math.random()}.zip`, blobOfZippedAudioFiles, {
+    //   cacheControl: "3600",
+    //  upsert: false,
+    //});
+    //if (data) console.log("data by supabase upload: ", data);
+    //if (error) console.log("error supabase upload: ", error);
+    //console.log("samples to upload", { loops, oneShots });
   };
 
   useEffect(() => {
@@ -189,6 +204,17 @@ export const UploadPage = () => {
         handleDrop(e, "oneShots"),
       );
     }
+
+    if (tagsRef.current) {
+      tagsRef.current.addEventListener("keydown", (e: KeyboardEvent) => {
+        if (e.key === "Enter") {
+          e.preventDefault(); // Prevent default behavior of the Enter key
+        }
+        if (!e.key.match(/[a-zA-Z0-9\s]/)) {
+          e.preventDefault(); // Prevent default behavior for non-alphanumeric characters
+        }
+      });
+    }
     return () => {
       if (loopsRef.current && oneShotsRef.current) {
         loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>
@@ -204,16 +230,18 @@ export const UploadPage = () => {
           handleDrop(e, "oneShots"),
         );
       }
+      if (tagsRef.current) {
+        tagsRef.current.removeEventListener("keydown", (e: KeyboardEvent) => {
+          if (e.key === "Enter") {
+            e.preventDefault(); // Prevent default behavior of the Enter key
+          }
+          if (!e.key.match(/[a-zA-Z0-9\s]/)) {
+            e.preventDefault(); // Prevent default behavior for non-alphanumeric characters
+          }
+        });
+      }
     };
   }, []);
-
-  useEffect(() => {
-    console.log("one shots now: ", oneShots);
-  }, [oneShots]);
-
-  useEffect(() => {
-    console.log("loops now: ", loops);
-  }, [loops]);
 
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
@@ -234,6 +262,7 @@ export const UploadPage = () => {
                 <Input
                   className="border-transparent focus:border-transparent focus:!ring-0"
                   style={{ outline: "none !important" }}
+                  ref={nameInputRef}
                 />
                 <Input className="opacity-0 cursor-default pointer-events-none" />
               </div>
@@ -244,6 +273,7 @@ export const UploadPage = () => {
                 className="border-transparent focus:border-transparent focus:!ring-0 resize-none"
                 style={{ outline: "none !important" }}
                 placeholder="Add Tags that describe the sound of your bundle..."
+                ref={tagsRef}
               />
 
               <div className="flex flex-col space-y-1.5">
@@ -313,12 +343,13 @@ export const UploadPage = () => {
             className=" !border-[#3ecf8e]/20 
             !h-10 hover:!bg-[#3ecf8e]/30
               hover:!border-[#3ecf8e]/50 h-8 flex items-center"
+            onClick={() => handleBundleUpload()}
           >
             Upload
           </Button>
         </CardFooter>
       </Card>
-      <Toaster theme="dark" style={{ borderColor: "red !important" }} />
+      <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
   );
 };
