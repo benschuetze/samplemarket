@@ -1,4 +1,5 @@
 import JSZip from "jszip";
+import lamejs from "lamejs";
 import { supabase } from "@/supabase";
 import { UploadedSample } from "./uploaded-sample";
 import { toast } from "sonner";
@@ -16,17 +17,25 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
+
+type AudioBufferObject = {
+  name: string;
+  buffer: ArrayBuffer;
+};
+
 export const UploadPage = () => {
-  //
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
+  const [audioBuffers, setAudioBuffers] = useState<Array<AudioBufferObject>>(
+    [],
+  );
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
   const tagsRef = useRef<HTMLTextAreaElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
 
-  const onUpload = (files: Array<File>, container: string) => {
+  const setFilesToUpload = (files: Array<File>, container: string) => {
     console.log("files to upload: ", files);
 
     if (container === "loops") {
@@ -50,47 +59,37 @@ export const UploadPage = () => {
     }
   };
 
-  const handleSetBundleTags = (char: string) => {
-    console.log("tag change char : ", char);
-  };
-
-  //zippen funktioniert so schon, nur das zusammenbauen der ordner ist falsch
   const zipFilesToUpload = async () => {
     const zip = new JSZip();
     const loopsFolder = zip.folder("Loops");
     const oneShotsFolder = zip.folder("one-Shots");
     for (let i = 0; i < loops.length; i++) {
       const file: File = loops[i];
-      // this call will create photos/README
       if (loopsFolder) loopsFolder.file(`${file.name}`, file);
     }
+
     for (let i = 0; i < oneShots.length; i++) {
       const file = oneShots[i];
       if (oneShotsFolder) oneShotsFolder.file(`${file.name}`, file);
     }
 
     const zipAsUinst8Array = await zip.generateAsync({ type: "uint8array" });
-    // Convert Uint8Array to Blob
     const blob = new Blob([zipAsUinst8Array], {
       type: "application/octet-stream",
     });
 
-    // Create a URL for the Blob
-    console.log("blob : ", blob);
-
-    console.log("zip file: ", zip);
     return blob;
   };
 
   const readFileAsync = async (
     file: File,
-    audioFiles: File[],
+    filesToProcess: File[],
     container: string,
   ) => {
     // check the duration of the sample and prevent it from being uploaded if it's too long
     if (file.type.includes("mp3") || file.type.includes("mpeg")) {
       toast(`${file.name} rejected. Mp3 files are not accepted.`);
-      audioFiles.splice(audioFiles.indexOf(file), 1);
+      filesToProcess.splice(filesToProcess.indexOf(file), 1);
       return;
     }
     return new Promise((resolve, reject) => {
@@ -100,15 +99,23 @@ export const UploadPage = () => {
 
       fileReader.onload = async () => {
         const arrayBuffer = fileReader.result as ArrayBuffer;
+
+        // check the duration and
+        // encode file in mp3 for client playback.
+        // this encoded file is being served to the client for sample playback in the browser
         await audioContext.decodeAudioData(
           arrayBuffer,
-          (buffer) => {
-            const duration = buffer.duration;
+          (audioBuffer) => {
+            const duration = audioBuffer.duration;
+            setAudioBuffers((prev) => [
+              ...prev,
+              { name: file.name.split(".")[0], buffer: arrayBuffer },
+            ]);
             if (duration > 5 && container === "oneShots") {
               toast(
                 `${file.name} rejected. One Shot samples have a maximal length of 5 seconds.`,
               );
-              audioFiles.splice(audioFiles.indexOf(file), 1);
+              filesToProcess.splice(filesToProcess.indexOf(file), 1);
             }
             if (
               (duration > 20 && container === "loops") ||
@@ -117,7 +124,7 @@ export const UploadPage = () => {
               toast(
                 `${file.name} rejected. Loops should be between 1 and 20 seconds long.`,
               );
-              audioFiles.splice(audioFiles.indexOf(file), 1);
+              filesToProcess.splice(filesToProcess.indexOf(file), 1);
             }
           },
           (error) => {
@@ -140,14 +147,14 @@ export const UploadPage = () => {
     e.preventDefault();
     e.stopPropagation();
     e.stopImmediatePropagation();
-    let audioFiles: File[] = [];
+    let filesToProcess: File[] = [];
     if (e.dataTransfer) {
       const { files } = e.dataTransfer || { files: [] };
-      audioFiles = [...files];
+      filesToProcess = [...files];
       const processAudioFiles = async () => {
         for (const file of files) {
           try {
-            await readFileAsync(file, audioFiles, container);
+            await readFileAsync(file, filesToProcess, container);
           } catch (e) {
             console.error("error reading file: ", e);
           }
@@ -156,8 +163,8 @@ export const UploadPage = () => {
       await processAudioFiles();
     }
 
-    if (audioFiles && audioFiles.length) {
-      onUpload(audioFiles, container);
+    if (filesToProcess && filesToProcess.length) {
+      setFilesToUpload(filesToProcess, container);
     }
   };
 
@@ -172,8 +179,24 @@ export const UploadPage = () => {
     return tagsAsString?.split(" ").filter((tag) => tag !== "") || [];
   };
 
+  const encodeFilesAsMp3 = async () => {
+    for (let i = 0; i < audioBuffers.length; i++) {
+      const currentBuffer = audioBuffers[i];
+      const wav = lamejs.WavHeader.readHeader(
+        new DataView(currentBuffer.buffer),
+      );
+      console.log("wav:", wav);
+      const samples = new Int16Array(
+        currentBuffer.buffer,
+        wav.dataOffset,
+        wav.dataLen / 2,
+      );
+    }
+  };
+
   const handleBundleUpload = async () => {
-    const blobOfZippedAudioFiles = await zipFilesToUpload();
+    const blobOfZippedfilesToProcess = await zipFilesToUpload();
+    const filesEncodedAsMp3 = encodeFilesAsMp3();
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
     console.log("builded tags: ", tags);
@@ -187,6 +210,10 @@ export const UploadPage = () => {
     //if (error) console.log("error supabase upload: ", error);
     //console.log("samples to upload", { loops, oneShots });
   };
+
+  useEffect(() => {
+    console.log("audio Buffers: ", audioBuffers);
+  }, [audioBuffers]);
 
   useEffect(() => {
     //useEffect kept verose and not functionalized for readability
