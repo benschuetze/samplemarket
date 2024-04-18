@@ -20,7 +20,8 @@ import { Textarea } from "./ui/textarea";
 
 type AudioBufferObject = {
   name: string;
-  buffer: ArrayBuffer;
+  audioBuffer: AudioBuffer;
+  arrayBuffer: ArrayBuffer;
 };
 
 export const UploadPage = () => {
@@ -109,7 +110,11 @@ export const UploadPage = () => {
             const duration = audioBuffer.duration;
             setAudioBuffers((prev) => [
               ...prev,
-              { name: file.name.split(".")[0], buffer: arrayBuffer },
+              {
+                name: file.name.split(".")[0],
+                arrayBuffer: arrayBuffer,
+                audioBuffer: audioBuffer,
+              },
             ]);
             if (duration > 5 && container === "oneShots") {
               toast(
@@ -182,14 +187,15 @@ export const UploadPage = () => {
   const encodeFilesAsMp3 = async () => {
     for (let i = 0; i < audioBuffers.length; i++) {
       const currentBuffer = audioBuffers[i];
+      const channelsOfFile = currentBuffer.audioBuffer.numberOfChannels;
       const wav = lamejs.WavHeader.readHeader(
-        new DataView(currentBuffer.buffer),
+        new DataView(currentBuffer.arrayBuffer),
       );
       console.log("wav:", wav);
       const samples = new Int16Array(
-        currentBuffer.buffer,
+        currentBuffer.arrayBuffer,
         wav.dataOffset,
-        wav.dataLen / 2,
+        wav.dataLen,
       );
     }
   };
