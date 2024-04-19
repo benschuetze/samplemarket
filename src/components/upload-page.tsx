@@ -17,13 +17,10 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
-import { FileRouteLoader } from "@tanstack/react-router";
-import { resolve } from "path";
 
-type AudioBufferObject = {
-  name: string;
-  audioBuffer: AudioBuffer;
-  arrayBuffer: ArrayBuffer;
+type encodeMp3Response = {
+  success: string;
+  mp3: Blob;
 };
 
 export const UploadPage = () => {
@@ -179,25 +176,61 @@ export const UploadPage = () => {
     console.log("geht rein in encode file");
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
+      const audioContext = new AudioContext();
       fileReader.onload = async () => {
         const arrayBuffer = fileReader.result as ArrayBuffer;
+
+        console.log("array buffer for this file: ", arrayBuffer);
         const wav = lamejs.WavHeader.readHeader(new DataView(arrayBuffer));
+        console.log("wav is: ", wav);
         const wavData = new Int16Array(
           arrayBuffer,
           wav.dataOffset,
           wav.dataLen / 2,
         );
+
+        console.log("wavdata is: ", wavData);
         const channels = wav.channels;
         const sampleRate = wav.sampleRate;
         const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
         var mp3Data = [];
         // create Int16Arrays for every channel of the file
+        console.log("wav data 2: ", wavData);
+        const audioBuffer = await audioContext.decodeAudioData(
+          arrayBuffer.slice(0),
+        );
+        console.log("wav data 3: ", wavData);
+        console.log("left channel data: ", audioBuffer.getChannelData(0));
+        const left = new Int16Array(audioBuffer.getChannelData(0).length); //one second of silence (get your data from the source you have)
+        const right =
+          channels === 2
+            ? new Int16Array(audioBuffer.getChannelData(1).length)
+            : null;
 
-        const left = new Int16Array(sampleRate); //one second of silence (get your data from the source you have)
-        const right = channels === 2 ? new Int16Array(sampleRate) : null; //one second of silence (get your data from the source you have)
+        // convert the float32 array of channeldata into a int16array
+        for (let i = 0; i < left.length; i++) {
+          // Scale the float32 value from [-1, 1] to [-32768, 32767] (int16 range)
+          const sample = Math.max(-1, Math.min(1, left[i])) * 0x7fff;
+
+          // Convert and store the value as int16
+          left[i] = sample;
+        }
+        if (right) {
+          for (let i = 0; i < right.length; i++) {
+            // Scale the float32 value from [-1, 1] to [-32768, 32767] (int16 range)
+            const sample = Math.max(-1, Math.min(1, right[i])) * 0x7fff;
+
+            // Convert and store the value as int16
+            right[i] = sample;
+          }
+        }
+
+        console.log("left: ", left);
         const sampleBlockSize = 1152; //can be anything but make it a multiple of 576 to make encoders life easier
-
-        for (var i = 0; i < wavData.length; i += sampleBlockSize) {
+        console.log("wav data 3", wavData);
+        let remaining = wavData.length;
+        console.log("remaining: ", remaining);
+        for (let i = 0; remaining >= sampleBlockSize; i += sampleBlockSize) {
           if (right) {
             const leftChunk = left.subarray(i, i + sampleBlockSize);
             const rightChunk = right.subarray(i, i + sampleBlockSize);
@@ -212,6 +245,7 @@ export const UploadPage = () => {
               mp3Data.push(mp3buf);
             }
           }
+          remaining -= sampleBlockSize;
         }
         const mp3buf = mp3encoder.flush(); //finish writing mp3
 
@@ -220,6 +254,9 @@ export const UploadPage = () => {
         }
 
         console.log("schau dir dieses encodete krams an bro: ", mp3Data);
+        console.log("done encoding, size=", mp3buf.length);
+        var blob = new Blob(mp3Data, { type: "audio/mp3" });
+        resolve({ succes: true, mp3: blob });
       };
       fileReader.readAsArrayBuffer(file);
     });
@@ -231,12 +268,16 @@ export const UploadPage = () => {
     const encodedOneAhots = [];
     //encode Loops
     for (let i = 0; i < loops.length; i++) {
+      console.log("should encode");
       await encodeFile(loops[i]);
     }
     for (let i = 0; i < oneShots.length; i++) {
+      console.log("should encode");
       console.log("file to encode: ", oneShots[i]);
-      await encodeFile(oneShots[i]);
+      const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
+      encodedOneAhots.push(mp3);
     }
+    return { encodedOneAhots, encodedLoops };
   };
 
   const handleBundleUpload = async () => {
@@ -246,6 +287,17 @@ export const UploadPage = () => {
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
     console.log("builded tags: ", tags);
+    for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.length; i++) {
+      const currentBlob = filesEncodedAsMp3.encodedOneAhots[i];
+      const { data, error } = await supabase.storage
+        .from("test-mp3s")
+        .upload(`public/${Math.random()}.mp3`, currentBlob, {
+          cacheControl: "3600",
+          upsert: false,
+        });
+      if (data) console.log("data by supabase upload: ", data);
+      if (error) console.log("error supabase upload: ", error);
+    }
     //  const { data, error } = await supabase.storage
     //   .from("zip-compressed-sample-packs")
     //  .upload(`public/${Math.random()}.zip`, blobOfZippedAudioFiles, {
