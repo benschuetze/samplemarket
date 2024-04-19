@@ -17,6 +17,8 @@ import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
+import { FileRouteLoader } from "@tanstack/react-router";
+import { resolve } from "path";
 
 type AudioBufferObject = {
   name: string;
@@ -27,9 +29,6 @@ type AudioBufferObject = {
 export const UploadPage = () => {
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
-  const [audioBuffers, setAudioBuffers] = useState<Array<AudioBufferObject>>(
-    [],
-  );
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -106,16 +105,8 @@ export const UploadPage = () => {
         // this encoded file is being served to the client for sample playback in the browser
         await audioContext.decodeAudioData(
           arrayBuffer,
-          (audioBuffer) => {
-            const duration = audioBuffer.duration;
-            setAudioBuffers((prev) => [
-              ...prev,
-              {
-                name: file.name.split(".")[0],
-                arrayBuffer: arrayBuffer,
-                audioBuffer: audioBuffer,
-              },
-            ]);
+          (decodedBuffer) => {
+            const duration = decodedBuffer.duration;
             if (duration > 5 && container === "oneShots") {
               toast(
                 `${file.name} rejected. One Shot samples have a maximal length of 5 seconds.`,
@@ -184,25 +175,74 @@ export const UploadPage = () => {
     return tagsAsString?.split(" ").filter((tag) => tag !== "") || [];
   };
 
+  const encodeFile = async (file: File) => {
+    console.log("geht rein in encode file");
+    return new Promise((resolve, reject) => {
+      const fileReader = new FileReader();
+      fileReader.onload = async () => {
+        const arrayBuffer = fileReader.result as ArrayBuffer;
+        const wav = lamejs.WavHeader.readHeader(new DataView(arrayBuffer));
+        const wavData = new Int16Array(
+          arrayBuffer,
+          wav.dataOffset,
+          wav.dataLen / 2,
+        );
+        const channels = wav.channels;
+        const sampleRate = wav.sampleRate;
+        const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
+        var mp3Data = [];
+        // create Int16Arrays for every channel of the file
+
+        const left = new Int16Array(sampleRate); //one second of silence (get your data from the source you have)
+        const right = channels === 2 ? new Int16Array(sampleRate) : null; //one second of silence (get your data from the source you have)
+        const sampleBlockSize = 1152; //can be anything but make it a multiple of 576 to make encoders life easier
+
+        for (var i = 0; i < wavData.length; i += sampleBlockSize) {
+          if (right) {
+            const leftChunk = left.subarray(i, i + sampleBlockSize);
+            const rightChunk = right.subarray(i, i + sampleBlockSize);
+            const mp3buf = mp3encoder.encodeBuffer(leftChunk, rightChunk);
+            if (mp3buf.length > 0) {
+              mp3Data.push(mp3buf);
+            }
+          } else {
+            const sampleChunk = left.subarray(i, i + sampleBlockSize);
+            const mp3buf = mp3encoder.encodeBuffer(sampleChunk);
+            if (mp3buf.length > 0) {
+              mp3Data.push(mp3buf);
+            }
+          }
+        }
+        const mp3buf = mp3encoder.flush(); //finish writing mp3
+
+        if (mp3buf.length > 0) {
+          mp3Data.push(mp3buf);
+        }
+
+        console.log("schau dir dieses encodete krams an bro: ", mp3Data);
+      };
+      fileReader.readAsArrayBuffer(file);
+    });
+  };
+
   const encodeFilesAsMp3 = async () => {
-    for (let i = 0; i < audioBuffers.length; i++) {
-      const currentBuffer = audioBuffers[i];
-      const channelsOfFile = currentBuffer.audioBuffer.numberOfChannels;
-      const wav = lamejs.WavHeader.readHeader(
-        new DataView(currentBuffer.arrayBuffer),
-      );
-      console.log("wav:", wav);
-      const samples = new Int16Array(
-        currentBuffer.arrayBuffer,
-        wav.dataOffset,
-        wav.dataLen,
-      );
+    console.log("rein in encode files as mp3");
+    const encodedLoops = [];
+    const encodedOneAhots = [];
+    //encode Loops
+    for (let i = 0; i < loops.length; i++) {
+      await encodeFile(loops[i]);
+    }
+    for (let i = 0; i < oneShots.length; i++) {
+      console.log("file to encode: ", oneShots[i]);
+      await encodeFile(oneShots[i]);
     }
   };
 
   const handleBundleUpload = async () => {
+    console.log("rein in bundle upload");
     const blobOfZippedfilesToProcess = await zipFilesToUpload();
-    const filesEncodedAsMp3 = encodeFilesAsMp3();
+    const filesEncodedAsMp3 = await encodeFilesAsMp3();
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
     console.log("builded tags: ", tags);
@@ -216,10 +256,6 @@ export const UploadPage = () => {
     //if (error) console.log("error supabase upload: ", error);
     //console.log("samples to upload", { loops, oneShots });
   };
-
-  useEffect(() => {
-    console.log("audio Buffers: ", audioBuffers);
-  }, [audioBuffers]);
 
   useEffect(() => {
     //useEffect kept verose and not functionalized for readability
