@@ -201,16 +201,15 @@ export const UploadPage = () => {
         );
         console.log("wav data 3: ", wavData);
         console.log("left channel data: ", audioBuffer.getChannelData(0));
-        const left = new Int16Array(audioBuffer.getChannelData(0).length); //one second of silence (get your data from the source you have)
-        const right =
-          channels === 2
-            ? new Int16Array(audioBuffer.getChannelData(1).length)
-            : null;
+        const left = audioBuffer.getChannelData(0); //one second of silence (get your data from the source you have)
+        const right = channels === 2 ? audioBuffer.getChannelData(1) : null;
 
         // convert the float32 array of channeldata into a int16array
         for (let i = 0; i < left.length; i++) {
           // Scale the float32 value from [-1, 1] to [-32768, 32767] (int16 range)
+          console.log("sample: ", left[i]);
           const sample = Math.max(-1, Math.min(1, left[i])) * 0x7fff;
+          console.log("sample after math operation: ", sample);
 
           // Convert and store the value as int16
           left[i] = sample;
