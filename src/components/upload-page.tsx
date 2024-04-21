@@ -13,10 +13,12 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { UploadConfirmationModal } from "./upload-confirmation-modal";
 import { Label } from "@/components/ui/label";
 import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
+import { UploadProgressModal } from "./upload-progress-modal";
 
 type encodeMp3Response = {
   success: string;
@@ -26,11 +28,15 @@ type encodeMp3Response = {
 export const UploadPage = () => {
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
+  const [uploadProgress, setUploadProgress] = useState<number>(0);
+  const [modalUploadProgressOpen, setModalUploadProgressOpen] =
+    useState<boolean>(false);
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
   const tagsRef = useRef<HTMLTextAreaElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
+  const progressModalRef = useRef<typeof UploadProgressModal>(null);
 
   const setFilesToUpload = (files: Array<File>, container: string) => {
     console.log("files to upload: ", files);
@@ -173,62 +179,44 @@ export const UploadPage = () => {
   };
 
   const encodeFile = async (file: File) => {
-    console.log("geht rein in encode file");
     return new Promise((resolve, reject) => {
       const fileReader = new FileReader();
       const audioContext = new AudioContext();
       fileReader.onload = async () => {
         const arrayBuffer = fileReader.result as ArrayBuffer;
 
-        console.log("array buffer for this file: ", arrayBuffer);
         const wav = lamejs.WavHeader.readHeader(new DataView(arrayBuffer));
-        console.log("wav is: ", wav);
         const wavData = new Int16Array(
           arrayBuffer,
           wav.dataOffset,
           wav.dataLen / 2,
         );
 
-        console.log("wavdata is: ", wavData);
         const channels = wav.channels;
         const sampleRate = wav.sampleRate;
         const mp3encoder = new lamejs.Mp3Encoder(channels, sampleRate, 128);
         var mp3Data = [];
-        // create Int16Arrays for every channel of the file
-        console.log("wav data 2: ", wavData);
         const audioBuffer = await audioContext.decodeAudioData(
           arrayBuffer.slice(0),
         );
-        console.log("wav data 3: ", wavData);
-        console.log("left channel data: ", audioBuffer.getChannelData(0));
-        const left = audioBuffer.getChannelData(0); //one second of silence (get your data from the source you have)
+        const left = audioBuffer.getChannelData(0);
         const right = channels === 2 ? audioBuffer.getChannelData(1) : null;
 
-        // convert the float32 array of channeldata into a int16array
         for (let i = 0; i < left.length; i++) {
-          // Scale the float32 value from [-1, 1] to [-32768, 32767] (int16 range)
-          console.log("sample: ", left[i]);
           const sample = Math.max(-1, Math.min(1, left[i])) * 0x7fff;
-          console.log("sample after math operation: ", sample);
 
-          // Convert and store the value as int16
           left[i] = sample;
         }
         if (right) {
           for (let i = 0; i < right.length; i++) {
-            // Scale the float32 value from [-1, 1] to [-32768, 32767] (int16 range)
             const sample = Math.max(-1, Math.min(1, right[i])) * 0x7fff;
 
-            // Convert and store the value as int16
             right[i] = sample;
           }
         }
 
-        console.log("left: ", left);
         const sampleBlockSize = 1152; //can be anything but make it a multiple of 576 to make encoders life easier
-        console.log("wav data 3", wavData);
         let remaining = wavData.length;
-        console.log("remaining: ", remaining);
         for (let i = 0; remaining >= sampleBlockSize; i += sampleBlockSize) {
           if (right) {
             const leftChunk = left.subarray(i, i + sampleBlockSize);
@@ -246,15 +234,13 @@ export const UploadPage = () => {
           }
           remaining -= sampleBlockSize;
         }
-        const mp3buf = mp3encoder.flush(); //finish writing mp3
+        const mp3buf = mp3encoder.flush();
 
         if (mp3buf.length > 0) {
           mp3Data.push(mp3buf);
         }
 
-        console.log("schau dir dieses encodete krams an bro: ", mp3Data);
-        console.log("done encoding, size=", mp3buf.length);
-        var blob = new Blob(mp3Data, { type: "audio/mp3" });
+        const blob: Blob = new Blob(mp3Data, { type: "audio/mp3" });
         resolve({ succes: true, mp3: blob });
       };
       fileReader.readAsArrayBuffer(file);
@@ -262,50 +248,47 @@ export const UploadPage = () => {
   };
 
   const encodeFilesAsMp3 = async () => {
-    console.log("rein in encode files as mp3");
     const encodedLoops = [];
     const encodedOneAhots = [];
     //encode Loops
     for (let i = 0; i < loops.length; i++) {
-      console.log("should encode");
-      await encodeFile(loops[i]);
+      const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
+      encodedLoops.push({ mp3, name: loops[i].name });
     }
     for (let i = 0; i < oneShots.length; i++) {
-      console.log("should encode");
-      console.log("file to encode: ", oneShots[i]);
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
-      encodedOneAhots.push(mp3);
+      console.log("current file: ", oneShots[i]);
+      encodedOneAhots.push({ mp3, name: oneShots[i].name });
     }
     return { encodedOneAhots, encodedLoops };
   };
 
   const handleBundleUpload = async () => {
-    console.log("rein in bundle upload");
-    const blobOfZippedfilesToProcess = await zipFilesToUpload();
+    setModalUploadProgressOpen(() => true);
+    const blobOfZippedAudioFiles = await zipFilesToUpload();
     const filesEncodedAsMp3 = await encodeFilesAsMp3();
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
-    console.log("builded tags: ", tags);
     for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.length; i++) {
       const currentBlob = filesEncodedAsMp3.encodedOneAhots[i];
       const { data, error } = await supabase.storage
         .from("test-mp3s")
-        .upload(`public/${Math.random()}.mp3`, currentBlob, {
+        .upload(`public/${Math.random()}.mp3`, currentBlob.mp3, {
           cacheControl: "3600",
           upsert: false,
         });
       if (data) console.log("data by supabase upload: ", data);
       if (error) console.log("error supabase upload: ", error);
     }
-    //  const { data, error } = await supabase.storage
-    //   .from("zip-compressed-sample-packs")
-    //  .upload(`public/${Math.random()}.zip`, blobOfZippedAudioFiles, {
-    //   cacheControl: "3600",
-    //  upsert: false,
-    //});
-    //if (data) console.log("data by supabase upload: ", data);
-    //if (error) console.log("error supabase upload: ", error);
-    //console.log("samples to upload", { loops, oneShots });
+    const { data, error } = await supabase.storage
+      .from("zip-compressed-sample-packs")
+      .upload(`public/${bundleName}.zip`, blobOfZippedAudioFiles, {
+        cacheControl: "3600",
+        upsert: false,
+      });
+    if (data) console.log("data by supabase upload: ", data);
+    if (error) console.log("error supabase upload: ", error);
+    console.log("samples to upload", { loops, oneShots });
   };
 
   useEffect(() => {
@@ -458,17 +441,10 @@ export const UploadPage = () => {
           >
             Cancel
           </Button>
-          <Button
-            variant="outline"
-            className=" !border-[#3ecf8e]/20 
-            !h-10 hover:!bg-[#3ecf8e]/30
-              hover:!border-[#3ecf8e]/50 h-8 flex items-center"
-            onClick={() => handleBundleUpload()}
-          >
-            Upload
-          </Button>
+          <UploadConfirmationModal handleBundleUpload={handleBundleUpload} />
         </CardFooter>
       </Card>
+      <UploadProgressModal open={modalUploadProgressOpen} />
       <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
   );
