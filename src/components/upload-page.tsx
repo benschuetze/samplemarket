@@ -31,6 +31,7 @@ export const UploadPage = () => {
   const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [modalUploadProgressOpen, setModalUploadProgressOpen] =
     useState<boolean>(false);
+  const [progressValue, setProgressValue] = useState<number>(0);
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -69,11 +70,14 @@ export const UploadPage = () => {
     for (let i = 0; i < loops.length; i++) {
       const file: File = loops[i];
       if (loopsFolder) loopsFolder.file(`${file.name}`, file);
+
+      setUploadProgress((prev) => prev++);
     }
 
     for (let i = 0; i < oneShots.length; i++) {
       const file = oneShots[i];
       if (oneShotsFolder) oneShotsFolder.file(`${file.name}`, file);
+      setUploadProgress((prev) => prev++);
     }
 
     const zipAsUinst8Array = await zip.generateAsync({ type: "uint8array" });
@@ -254,11 +258,13 @@ export const UploadPage = () => {
     for (let i = 0; i < loops.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       encodedLoops.push({ mp3, name: loops[i].name });
+      setUploadProgress((prev) => prev++);
     }
     for (let i = 0; i < oneShots.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       console.log("current file: ", oneShots[i]);
       encodedOneAhots.push({ mp3, name: oneShots[i].name });
+      setUploadProgress((prev) => prev++);
     }
     return { encodedOneAhots, encodedLoops };
   };
@@ -277,7 +283,11 @@ export const UploadPage = () => {
           cacheControl: "3600",
           upsert: false,
         });
-      if (data) console.log("data by supabase upload: ", data);
+      if (data) {
+        console.log("data by supabase upload: ", data);
+        setUploadProgress((prev) => prev++);
+      }
+
       if (error) console.log("error supabase upload: ", error);
     }
     const { data, error } = await supabase.storage
@@ -286,7 +296,9 @@ export const UploadPage = () => {
         cacheControl: "3600",
         upsert: false,
       });
-    if (data) console.log("data by supabase upload: ", data);
+    if (data){ console.log("data by supabase upload: ", data)
+      setUploadProgress((prev) => prev++)
+      };
     if (error) console.log("error supabase upload: ", error);
     console.log("samples to upload", { loops, oneShots });
   };
@@ -444,7 +456,7 @@ export const UploadPage = () => {
           <UploadConfirmationModal handleBundleUpload={handleBundleUpload} />
         </CardFooter>
       </Card>
-      <UploadProgressModal open={modalUploadProgressOpen} />
+      <UploadProgressModal open={modalUploadProgressOpen} value={progressValue}/>
       <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
   );
