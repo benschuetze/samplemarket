@@ -9,8 +9,12 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Progress } from "./ui/progress";
+import { useEffect } from "react";
 
 export const UploadProgressModal = ({ open, value }) => {
+  useEffect(() => {
+    console.log("progress value changed: ", value);
+  }, [value]);
   return (
     <Dialog open={open}>
       <DialogContent>

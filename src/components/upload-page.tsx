@@ -25,10 +25,12 @@ type encodeMp3Response = {
   mp3: Blob;
 };
 
+//for upload progress bar
+let completedTasks = 0;
+
 export const UploadPage = () => {
   const [loops, setLoops] = useState<Array<File>>([]);
   const [oneShots, setOneShots] = useState<Array<File>>([]);
-  const [uploadProgress, setUploadProgress] = useState<number>(0);
   const [modalUploadProgressOpen, setModalUploadProgressOpen] =
     useState<boolean>(false);
   const [progressValue, setProgressValue] = useState<number>(0);
@@ -38,6 +40,13 @@ export const UploadPage = () => {
   const tagsRef = useRef<HTMLTextAreaElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const progressModalRef = useRef<typeof UploadProgressModal>(null);
+
+  const updateProgress = (totalTasks: number, isFinished = false) => {
+    completedTasks++;
+    const progress = Math.floor((completedTasks / totalTasks) * 100); // Calculate progress percentage
+    setProgressValue(progress); // Update progress bar
+    if (isFinished) setProgressValue(100);
+  };
 
   const setFilesToUpload = (files: Array<File>, container: string) => {
     console.log("files to upload: ", files);
@@ -63,7 +72,7 @@ export const UploadPage = () => {
     }
   };
 
-  const zipFilesToUpload = async () => {
+  const zipFilesToUpload = async (progressIncrementValue: number) => {
     const zip = new JSZip();
     const loopsFolder = zip.folder("Loops");
     const oneShotsFolder = zip.folder("one-Shots");
@@ -71,13 +80,13 @@ export const UploadPage = () => {
       const file: File = loops[i];
       if (loopsFolder) loopsFolder.file(`${file.name}`, file);
 
-      setUploadProgress((prev) => prev++);
+      setProgressValue((prev) => prev + progressIncrementValue);
     }
 
     for (let i = 0; i < oneShots.length; i++) {
       const file = oneShots[i];
       if (oneShotsFolder) oneShotsFolder.file(`${file.name}`, file);
-      setUploadProgress((prev) => prev++);
+      setProgressValue((prev) => prev + progressIncrementValue);
     }
 
     const zipAsUinst8Array = await zip.generateAsync({ type: "uint8array" });
@@ -251,28 +260,29 @@ export const UploadPage = () => {
     });
   };
 
-  const encodeFilesAsMp3 = async () => {
+  const encodeFilesAsMp3 = async (totalTasks: number) => {
     const encodedLoops = [];
     const encodedOneAhots = [];
     //encode Loops
     for (let i = 0; i < loops.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       encodedLoops.push({ mp3, name: loops[i].name });
-      setUploadProgress((prev) => prev++);
+      updateProgress(totalTasks);
     }
     for (let i = 0; i < oneShots.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       console.log("current file: ", oneShots[i]);
       encodedOneAhots.push({ mp3, name: oneShots[i].name });
-      setUploadProgress((prev) => prev++);
+      updateProgress(totalTasks);
     }
     return { encodedOneAhots, encodedLoops };
   };
 
   const handleBundleUpload = async () => {
+    const totalTasks = (loops.length + oneShots.length + 1) * 2;
     setModalUploadProgressOpen(() => true);
-    const blobOfZippedAudioFiles = await zipFilesToUpload();
-    const filesEncodedAsMp3 = await encodeFilesAsMp3();
+    const blobOfZippedAudioFiles = await zipFilesToUpload(totalTasks);
+    const filesEncodedAsMp3 = await encodeFilesAsMp3(totalTasks);
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
     for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.length; i++) {
@@ -285,7 +295,7 @@ export const UploadPage = () => {
         });
       if (data) {
         console.log("data by supabase upload: ", data);
-        setUploadProgress((prev) => prev++);
+        updateProgress(totalTasks);
       }
 
       if (error) console.log("error supabase upload: ", error);
@@ -296,10 +306,12 @@ export const UploadPage = () => {
         cacheControl: "3600",
         upsert: false,
       });
-    if (data){ console.log("data by supabase upload: ", data)
-      setUploadProgress((prev) => prev++)
-      };
+    if (data) {
+      console.log("data by supabase upload: ", data);
+      updateProgress(totalTasks);
+    }
     if (error) console.log("error supabase upload: ", error);
+    updateProgress(totalTasks, true);
     console.log("samples to upload", { loops, oneShots });
   };
 
@@ -357,6 +369,10 @@ export const UploadPage = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    console.log("progress value set: ", progressValue);
+  }, [progressValue]);
 
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
@@ -456,7 +472,10 @@ export const UploadPage = () => {
           <UploadConfirmationModal handleBundleUpload={handleBundleUpload} />
         </CardFooter>
       </Card>
-      <UploadProgressModal open={modalUploadProgressOpen} value={progressValue}/>
+      <UploadProgressModal
+        open={modalUploadProgressOpen}
+        value={progressValue}
+      />
       <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
   );
