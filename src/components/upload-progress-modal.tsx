@@ -11,7 +11,7 @@ import {
 import { Progress } from "./ui/progress";
 import { useEffect } from "react";
 
-export const UploadProgressModal = ({ open, value }) => {
+export const UploadProgressModal = ({ open, value, uploadSuccessful }) => {
   useEffect(() => {
     console.log("progress value changed: ", value);
   }, [value]);
@@ -19,7 +19,11 @@ export const UploadProgressModal = ({ open, value }) => {
     <Dialog open={open}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Uploading...</DialogTitle>
+          <DialogTitle>
+            {!uploadSuccessful
+              ? "Uploading..."
+              : "Your Bundle has been uploaded!"}
+          </DialogTitle>
         </DialogHeader>
         <Progress value={value} />
       </DialogContent>

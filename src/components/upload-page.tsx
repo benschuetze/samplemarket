@@ -34,6 +34,7 @@ export const UploadPage = () => {
   const [modalUploadProgressOpen, setModalUploadProgressOpen] =
     useState<boolean>(false);
   const [progressValue, setProgressValue] = useState<number>(0);
+  const [uploadSuccessful, setUploadSuccessful] = useState<boolean>(false);
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -279,6 +280,7 @@ export const UploadPage = () => {
   };
 
   const handleBundleUpload = async () => {
+    setUploadSuccessful(false);
     const totalTasks = (loops.length + oneShots.length + 1) * 2;
     setModalUploadProgressOpen(() => true);
     const blobOfZippedAudioFiles = await zipFilesToUpload(totalTasks);
@@ -309,9 +311,13 @@ export const UploadPage = () => {
     if (data) {
       console.log("data by supabase upload: ", data);
       updateProgress(totalTasks);
+      updateProgress(totalTasks, true);
+      setLoops([]);
+      setOneShots([]);
+      setUploadSuccessful(true);
     }
     if (error) console.log("error supabase upload: ", error);
-    updateProgress(totalTasks, true);
+
     console.log("samples to upload", { loops, oneShots });
   };
 
@@ -369,6 +375,15 @@ export const UploadPage = () => {
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (uploadSuccessful === true) {
+      setTimeout(() => {
+        setModalUploadProgressOpen(false);
+        completedTasks = 0;
+      }, 1000);
+    }
+  }, [uploadSuccessful]);
 
   useEffect(() => {
     console.log("progress value set: ", progressValue);
@@ -469,12 +484,18 @@ export const UploadPage = () => {
           >
             Cancel
           </Button>
-          <UploadConfirmationModal handleBundleUpload={handleBundleUpload} />
+          <UploadConfirmationModal
+            oneShots={oneShots}
+            loops={loops}
+            handleBundleUpload={handleBundleUpload}
+            bundleName={nameInputRef.current?.value}
+          />
         </CardFooter>
       </Card>
       <UploadProgressModal
         open={modalUploadProgressOpen}
         value={progressValue}
+        uploadSuccessful={uploadSuccessful}
       />
       <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
