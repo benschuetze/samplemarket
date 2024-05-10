@@ -14,6 +14,7 @@ import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRoute } from './routes/__root'
 import { Route as UploadImport } from './routes/upload'
+import { Route as SignupImport } from './routes/signup'
 import { Route as LoginImport } from './routes/login'
 
 // Create Virtual Routes
@@ -24,6 +25,11 @@ const IndexLazyImport = createFileRoute('/')()
 
 const UploadRoute = UploadImport.update({
   path: '/upload',
+  getParentRoute: () => rootRoute,
+} as any)
+
+const SignupRoute = SignupImport.update({
+  path: '/signup',
   getParentRoute: () => rootRoute,
 } as any)
 
@@ -49,6 +55,10 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginImport
       parentRoute: typeof rootRoute
     }
+    '/signup': {
+      preLoaderRoute: typeof SignupImport
+      parentRoute: typeof rootRoute
+    }
     '/upload': {
       preLoaderRoute: typeof UploadImport
       parentRoute: typeof rootRoute
@@ -61,6 +71,7 @@ declare module '@tanstack/react-router' {
 export const routeTree = rootRoute.addChildren([
   IndexLazyRoute,
   LoginRoute,
+  SignupRoute,
   UploadRoute,
 ])
 

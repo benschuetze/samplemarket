@@ -1,0 +1,45 @@
+  .git
+  public
+  ✗ ★ src
+    assets
+    ✗ components
+  │   ui
+  │ │  bundle-card.tsx
+  │ │  explore-all.tsx
+  │ │  header.tsx
+  │ │  ✗ login-page.tsx
+  │ │  mode-toggle.tsx
+  │ │  signup.tsx
+  │ │  theme-provider.tsx
+  │ │  upload-confirmation-modal.tsx
+  │ │  upload-page.tsx
+  │ │  upload-progress-modal.tsx
+  │ └  uploaded-sample.tsx
+    lib
+    ★ routes
+  │ │  __root.tsx
+  │ │  index.lazy.tsx
+  │ │  login.tsx
+  │ │  ★ signup.tsx
+  │ └  upload.tsx
+    sounds
+  │  App.css
+  │  App.tsx
+  │  index.css
+  │  main.tsx
+  │ 󰛦 routeTree.gen.ts
+  │ 󰛦 supabase.ts
+  └ 󰛦 vite-env.d.ts
+  󰌞 .eslintrc.cjs
+   .gitignore
+   components.json
+   index.html
+  󰈚 ★ NvimTree_1
+   package-lock.json
+   package.json
+  󰌞 postcss.config.js
+   README.md
+  󱏿 tailwind.config.js
+   tsconfig.json
+   tsconfig.node.json
+  󰛦 vite.config.ts

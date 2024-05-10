@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 export const Route = createFileRoute("/upload")({
   component: Upload,
   beforeLoad: async ({ location }) => {
-    console.log("shcau is weg");
     const authResult = await supabase.auth.getSession();
     if (!authResult.data.session) {
       throw redirect({
