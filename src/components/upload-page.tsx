@@ -331,6 +331,11 @@ export const UploadPage = () => {
 
     console.log("samples to upload", { loops, oneShots });
   };
+  
+  // get already used names on first render
+  useEffect(() => { 
+      supabase.from("zip-compressed-sample-packs")
+    }, [])
 
   useEffect(() => {
     //useEffect kept verose and not functionalized for readability

@@ -37,7 +37,7 @@ export const UploadConfirmationModal = ({
         </Button>
       </AlertDialogTrigger>
       <AlertDialogContent className="max-w-sm rounde rounded-md">
-        <AlertDialogHeader className="!flex-left">
+        <AlertDialogHeader className="">
           <AlertDialogTitle>Upload this bundle?</AlertDialogTitle>
         </AlertDialogHeader>
 
