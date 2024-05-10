@@ -35,6 +35,7 @@ export const UploadPage = () => {
     useState<boolean>(false);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [uploadSuccessful, setUploadSuccessful] = useState<boolean>(false);
+  const [existingNamesInDB, setExistingNamesInDB] = useState<Array<string>>([])
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -90,7 +91,13 @@ export const UploadPage = () => {
       setProgressValue((prev) => prev + progressIncrementValue);
     }
 
-    const zipAsUinst8Array = await zip.generateAsync({ type: "uint8array" });
+    const zipAsUinst8Array = await zip.generateAsync({
+      type: "uint8array",
+      compression: "DEFLATE",
+      compressionOptions: {
+        level: 9,
+      },
+    });
     const blob = new Blob([zipAsUinst8Array], {
       type: "application/octet-stream",
     });
@@ -315,8 +322,12 @@ export const UploadPage = () => {
       setLoops([]);
       setOneShots([]);
       setUploadSuccessful(true);
+      if (tagsRef.current?.value) tagsRef.current.value = "";
+      if (nameInputRef.current?.value) nameInputRef.current.value = "";
     }
-    if (error) console.log("error supabase upload: ", error);
+    if (error) {
+      console.log("error supabase upload: ", error);
+    }
 
     console.log("samples to upload", { loops, oneShots });
   };
