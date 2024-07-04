@@ -7,6 +7,7 @@ export const Route = createFileRoute("/upload")({
   component: Upload,
   beforeLoad: async ({ location }) => {
     const authResult = await supabase.auth.getSession();
+    console.log("auth result: ", authResult);
     if (!authResult.data.session) {
       throw redirect({
         to: "/login",

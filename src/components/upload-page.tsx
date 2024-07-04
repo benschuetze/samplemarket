@@ -364,6 +364,7 @@ export const UploadPage = () => {
         }
       });
     }
+
     return () => {
       if (loopsRef.current && oneShotsRef.current) {
         loopsRef.current.removeEventListener("dragover", (e: DragEvent) =>

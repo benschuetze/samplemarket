@@ -1,4 +1,3 @@
-import { supabase } from "@/supabase";
 import { ChangeEvent, useState } from "react";
 import { Button } from "./ui/button";
 import { Textarea } from "./ui/textarea";
@@ -14,6 +13,8 @@ import { Input } from "./ui/input";
 import { useRef } from "react";
 import { Avatar } from "./ui/avatar";
 import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
+import { supabase } from "@/supabase";
+
 export const SignUp = () => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const userNameRef = useRef<HTMLInputElement>(null);
@@ -21,9 +22,40 @@ export const SignUp = () => {
   const emailRef = useRef<HTMLInputElement>(null);
   const tagsRef = useRef<HTMLTextAreaElement>(null);
 
+  const [createDisabled, setCreateDisabled] = useState(true);
+
   const handleImageSelected = (e: ChangeEvent) => {
     const url = URL.createObjectURL(e.target.files[0]);
     setProfileImageUrl(url);
+  };
+
+  const handleSignUp = async () => {
+    if (emailRef.current?.value && passwordRef.current?.value) {
+      const { data, error } = await supabase.auth.signUp({
+        email: emailRef.current?.value,
+        password: passwordRef.current?.value,
+        options: {
+          emailRedirectTo: "http://localhost:5173/upload"
+        }
+      });
+
+      console.log("Data and error: ", { data, error });
+      if(error) {
+        console.error("Error while creating account: ", error)
+        return
+      }
+      
+    }
+  };
+
+  const checkCreationPossible = () => {
+    if (
+      userNameRef.current?.value &&
+      passwordRef.current?.value &&
+      emailRef.current?.value
+    ) {
+      setCreateDisabled(false);
+    }
   };
 
   return (
@@ -34,10 +66,10 @@ export const SignUp = () => {
         </CardHeader>
         <CardContent>
           <div className="mb-6 flex justify-center">
-            <Avatar className="h-40 w-40 !relative">
+            <Avatar className="h-40 w-40 !relative border-gray-600 border">
               <AvatarImage
                 src={profileImageUrl || undefined}
-                className="object-cover object-center w-full h-full"
+                className="object-cover object-center w-full h-full border"
               />
               <AvatarFallback>CN</AvatarFallback>
             </Avatar>
@@ -74,6 +106,7 @@ export const SignUp = () => {
                 placeholder="Username"
                 className="mb-4 border-transparent w-60  focus:border-transparent focus:!ring-0"
                 ref={userNameRef}
+                onBlur={checkCreationPossible}
               />
             </div>
             <div className="ml-8 mb-8">
@@ -83,12 +116,14 @@ export const SignUp = () => {
                 placeholder="Email"
                 className="mb-4 w-60 border-transparent focus:border-transparent focus:!ring-0"
                 ref={emailRef}
+                onBlur={checkCreationPossible}
               />
               <Input
                 type="password"
                 className="border-transparent w-60 focus:border-transparent focus:!ring-0"
                 placeholder="Password"
                 ref={passwordRef}
+                onBlur={checkCreationPossible}
               />
             </div>
           </div>
@@ -111,7 +146,8 @@ export const SignUp = () => {
             className=" !border-[#3ecf8e]/20 !h-10
             w-20 hover:!bg-[#3ecf8e]/30 hover:!border-[#3ecf8e]/50 h-8 flex
             items-center justify-center ml-2"
-            disabled={!userNameRef.current?.value}
+            disabled={createDisabled}
+            onClick={() => handleSignUp()}
           >
             Create
           </Button>
