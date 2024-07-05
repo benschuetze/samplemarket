@@ -14,6 +14,7 @@ import { useRef } from "react";
 import { Avatar } from "./ui/avatar";
 import { AvatarFallback, AvatarImage } from "@radix-ui/react-avatar";
 import { supabase } from "@/supabase";
+import { SignupRedirectModal } from "./signup-confirmation-modal";
 
 export const SignUp = () => {
   const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
@@ -34,17 +35,16 @@ export const SignUp = () => {
       const { data, error } = await supabase.auth.signUp({
         email: emailRef.current?.value,
         password: passwordRef.current?.value,
-        options: {
-          emailRedirectTo: "http://localhost:5173/upload"
-        }
       });
 
       console.log("Data and error: ", { data, error });
-      if(error) {
-        console.error("Error while creating account: ", error)
-        return
+      if (error) {
+        console.error("Error while creating account: ", error);
+        return;
       }
-      
+      document.getElementById("signup-container") &&
+        (document.getElementById("signup-container").style.opacity = "0.8");
+      document.getElementById("sign-up-redirect-modal-trigger")?.click();
     }
   };
 
@@ -59,7 +59,7 @@ export const SignUp = () => {
   };
 
   return (
-    <div className="mt-24">
+    <div className="mt-24" id="signup-container">
       <Card className="w-[600px] mx-auto !relative">
         <CardHeader>
           <CardTitle>Create Account</CardTitle>
@@ -153,6 +153,7 @@ export const SignUp = () => {
           </Button>
         </CardFooter>
       </Card>
+      <SignupRedirectModal></SignupRedirectModal>
     </div>
   );
 };

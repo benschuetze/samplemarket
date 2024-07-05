@@ -1,4 +1,4 @@
-import { Link, redirect } from "@tanstack/react-router";
+import { Link } from "@tanstack/react-router";
 import { supabase } from "@/supabase";
 import { router } from "@/main";
 import { Button } from "./ui/button";
@@ -11,8 +11,11 @@ import {
   CardFooter,
 } from "./ui/card";
 import { Input } from "./ui/input";
-import { useRef } from "react";
+import { useRef, useState } from "react";
+
 export const Login = () => {
+  const [loginFailed, setLoginFailed] = useState(false);
+
   const passWordRef = useRef<HTMLInputElement>(null);
   const emailRef = useRef<HTMLInputElement>(null);
 
@@ -25,6 +28,8 @@ export const Login = () => {
       console.log("besc data: ", { data, error });
       if (data.session) {
         router.history.push("/upload");
+      } else {
+        setLoginFailed(true);
       }
     }
   };
@@ -39,6 +44,7 @@ export const Login = () => {
             <Link to="/signup" className="text-[#3ecf8e]/90">
               here!
             </Link>
+            {loginFailed && <p>Something went wrong there, please try again</p>}
           </CardDescription>
         </CardHeader>
         <CardContent>

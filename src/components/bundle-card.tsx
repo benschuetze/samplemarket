@@ -274,6 +274,13 @@ export const SampleBundle: React.FC<SampleBundleProps> = ({
             variant="outline"
             className="absolute right-2 !border-[#3ecf8e]/20 bottom-3 hover:!bg-[#3ecf8e]/30
               hover:!border-[#3ecf8e]/50 h-8 flex items-center"
+            onClick={() => {
+              setTestState((prev) => {
+                const oldState = prev;
+                const newState = prev + 1;
+                return newState;
+              });
+            }}
           >
             Buy
           </Button>

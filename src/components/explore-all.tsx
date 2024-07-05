@@ -1,10 +1,36 @@
+import { supabase } from "@/supabase";
 import { SampleBundle } from "./bundle-card";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export const ExploreAllContainer = () => {
-  //here i will request all the latest uplóaded sample bundles and render
-  //each one as a SampleBundle component
   const [hoveredCardId, setHoveredCardId] = useState<string>("");
+
+  const getAudio = async () => {
+    const { data, error } = await supabase.storage
+      .from("test-mp3s")
+      .list("public", {
+        limit: 100,
+        offset: 0,
+        sortBy: {
+          column: "name",
+          order: "asc",
+        },
+      });
+    if (error) console.log("error: ", error);
+    console.log("data: ", data);
+    const fileUrls: Array<string> = [];
+    data?.forEach((fileData) => {
+      const name = fileData.name;
+      const { data } = supabase.storage
+        .from("sounds-for-development")
+        .getPublicUrl(`samples/${name}`);
+      fileUrls.push(data.publicUrl);
+    });
+  };
+
+  useEffect(() => {
+    getAudio();
+  }, []);
 
   return (
     <div

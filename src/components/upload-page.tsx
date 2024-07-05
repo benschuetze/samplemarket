@@ -35,7 +35,7 @@ export const UploadPage = () => {
     useState<boolean>(false);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [uploadSuccessful, setUploadSuccessful] = useState<boolean>(false);
-  const [existingNamesInDB, setExistingNamesInDB] = useState<Array<string>>([])
+  const [existingNamesInDB, setExistingNamesInDB] = useState<Array<string>>([]);
 
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
@@ -274,13 +274,13 @@ export const UploadPage = () => {
     //encode Loops
     for (let i = 0; i < loops.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
-      encodedLoops.push({ mp3, name: loops[i].name });
+      encodedLoops.push({ mp3, name: loops[i].name , type: "Loops"});
       updateProgress(totalTasks);
     }
     for (let i = 0; i < oneShots.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       console.log("current file: ", oneShots[i]);
-      encodedOneAhots.push({ mp3, name: oneShots[i].name });
+      encodedOneAhots.push({ mp3, name: oneShots[i].name,  type: "OneShots"});
       updateProgress(totalTasks);
     }
     return { encodedOneAhots, encodedLoops };
@@ -288,20 +288,27 @@ export const UploadPage = () => {
 
   const handleBundleUpload = async () => {
     setUploadSuccessful(false);
+    //this is only needed to display the progress bar in the upload modal correctly.
     const totalTasks = (loops.length + oneShots.length + 1) * 2;
+
     setModalUploadProgressOpen(() => true);
-    const blobOfZippedAudioFiles = await zipFilesToUpload(totalTasks);
+
+    const blobOfZippedAudioFiles: Blob = await zipFilesToUpload(totalTasks);
     const filesEncodedAsMp3 = await encodeFilesAsMp3(totalTasks);
     const bundleName = nameInputRef.current?.value;
     const tags = buildTagsFromString();
-    for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.length; i++) {
+    for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.concat(filesEncodedAsMp3.encodedLoops).length; i++) {
       const currentBlob = filesEncodedAsMp3.encodedOneAhots[i];
       const { data, error } = await supabase.storage
         .from("test-mp3s")
-        .upload(`public/${Math.random()}.mp3`, currentBlob.mp3, {
-          cacheControl: "3600",
-          upsert: false,
-        });
+        .upload(
+          `public/${bundleName}/${currentBlob.type}/${currentBlob.name}.mp3`,
+          currentBlob.mp3,
+          {
+            cacheControl: "3600",
+            upsert: false,
+          },
+        );
       if (data) {
         console.log("data by supabase upload: ", data);
         updateProgress(totalTasks);
@@ -331,14 +338,20 @@ export const UploadPage = () => {
 
     console.log("samples to upload", { loops, oneShots });
   };
-  
+
+  const getUsedNames = async () => {
+    const { data, error } = await supabase.storage.getBucket(
+      "zip-compressed-sample-packs",
+    );
+    console.log("besc data: ", { data, error });
+  };
+
   // get already used names on first render
-  useEffect(() => { 
-      supabase.from("zip-compressed-sample-packs")
-    }, [])
+  useEffect(() => {
+    getUsedNames();
+  }, []);
 
   useEffect(() => {
-    //useEffect kept verose and not functionalized for readability
     if (loopsRef.current && oneShotsRef.current) {
       loopsRef.current.addEventListener("dragover", (e: DragEvent) =>
         handleDragover(e),
@@ -357,7 +370,7 @@ export const UploadPage = () => {
     if (tagsRef.current) {
       tagsRef.current.addEventListener("keydown", (e: KeyboardEvent) => {
         if (e.key === "Enter") {
-          e.preventDefault(); // Prevent default behavior of the Enter key
+          e.preventDefault();
         }
         if (!e.key.match(/[a-zA-Z0-9\s]/)) {
           e.preventDefault(); // Prevent default behavior for non-alphanumeric characters
@@ -383,10 +396,10 @@ export const UploadPage = () => {
       if (tagsRef.current) {
         tagsRef.current.removeEventListener("keydown", (e: KeyboardEvent) => {
           if (e.key === "Enter") {
-            e.preventDefault(); // Prevent default behavior of the Enter key
+            e.preventDefault();
           }
           if (!e.key.match(/[a-zA-Z0-9\s]/)) {
-            e.preventDefault(); // Prevent default behavior for non-alphanumeric characters
+            e.preventDefault();
           }
         });
       }
@@ -402,18 +415,11 @@ export const UploadPage = () => {
     }
   }, [uploadSuccessful]);
 
-  useEffect(() => {
-    console.log("progress value set: ", progressValue);
-  }, [progressValue]);
-
   return (
     <div className="mt-16 mx-auto" style={{ maxWidth: "1340px" }}>
       <Card className="max-w-5xl mt-24">
         <CardHeader>
           <CardTitle>Upload Bundle</CardTitle>
-          <CardDescription>
-            Deploy your new project in one-click.
-          </CardDescription>
         </CardHeader>
         <CardContent>
           <form>
