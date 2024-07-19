@@ -1,6 +1,7 @@
 import JSZip from "jszip";
 import lamejs from "lamejs";
 import { supabase } from "@/supabase";
+import { router } from "@/main";
 import { UploadedSample } from "./uploaded-sample";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ import { useEffect, useRef, useState } from "react";
 import { Toaster } from "@/components/ui/sonner";
 import { Textarea } from "./ui/textarea";
 import { UploadProgressModal } from "./upload-progress-modal";
+import { GoToSamplePackModal } from "./go-to-sample-pack-modal";
 
 type encodeMp3Response = {
   success: string;
@@ -35,13 +37,19 @@ export const UploadPage = () => {
     useState<boolean>(false);
   const [progressValue, setProgressValue] = useState<number>(0);
   const [uploadSuccessful, setUploadSuccessful] = useState<boolean>(false);
-  const [existingNamesInDB, setExistingNamesInDB] = useState<Array<string>>([]);
-
+  const [modalGoToSamplePackOpen, setModalGoToSamplePackOpen] =
+    useState<boolean>(false);
+  const [bundleName, setBundleName] = useState<string>("");
+  const [bundleId, setBundleId] = useState<string>("")
   const loopsRef = useRef<HTMLDivElement>(null);
   const oneShotsRef = useRef<HTMLDivElement>(null);
   const tagsRef = useRef<HTMLTextAreaElement>(null);
   const nameInputRef = useRef<HTMLInputElement>(null);
   const progressModalRef = useRef<typeof UploadProgressModal>(null);
+
+  const goToSamplePack = (  ) => {
+    router.history.push(`bundles/${bundleName}/${bundleId}`);
+  };
 
   const updateProgress = (totalTasks: number, isFinished = false) => {
     completedTasks++;
@@ -236,7 +244,7 @@ export const UploadPage = () => {
           }
         }
 
-        const sampleBlockSize = 1152; //can be anything but make it a multiple of 576 to make encoders life easier
+        const sampleBlockSize = 1152;
         let remaining = wavData.length;
         for (let i = 0; remaining >= sampleBlockSize; i += sampleBlockSize) {
           if (right) {
@@ -274,13 +282,13 @@ export const UploadPage = () => {
     //encode Loops
     for (let i = 0; i < loops.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
-      encodedLoops.push({ mp3, name: loops[i].name , type: "Loops"});
+      encodedLoops.push({ mp3, name: loops[i].name, type: "Loops" });
       updateProgress(totalTasks);
     }
     for (let i = 0; i < oneShots.length; i++) {
       const { mp3 }: encodeMp3Response = await encodeFile(oneShots[i]);
       console.log("current file: ", oneShots[i]);
-      encodedOneAhots.push({ mp3, name: oneShots[i].name,  type: "OneShots"});
+      encodedOneAhots.push({ mp3, name: oneShots[i].name, type: "OneShots" });
       updateProgress(totalTasks);
     }
     return { encodedOneAhots, encodedLoops };
@@ -295,14 +303,21 @@ export const UploadPage = () => {
 
     const blobOfZippedAudioFiles: Blob = await zipFilesToUpload(totalTasks);
     const filesEncodedAsMp3 = await encodeFilesAsMp3(totalTasks);
-    const bundleName = nameInputRef.current?.value;
+    const bundleNameValue = nameInputRef.current?.value;
+    setBundleName(bundleNameValue ||  "")
     const tags = buildTagsFromString();
-    for (let i = 0; i < filesEncodedAsMp3.encodedOneAhots.concat(filesEncodedAsMp3.encodedLoops).length; i++) {
+    for (
+      let i = 0;
+      i <
+      filesEncodedAsMp3.encodedOneAhots.concat(filesEncodedAsMp3.encodedLoops)
+        .length;
+      i++
+    ) {
       const currentBlob = filesEncodedAsMp3.encodedOneAhots[i];
       const { data, error } = await supabase.storage
         .from("test-mp3s")
         .upload(
-          `public/${bundleName}/${currentBlob.type}/${currentBlob.name}.mp3`,
+          `public/${bundleNameValue}/${currentBlob.type}/${currentBlob.name}.mp3`,
           currentBlob.mp3,
           {
             cacheControl: "3600",
@@ -318,12 +333,15 @@ export const UploadPage = () => {
     }
     const { data, error } = await supabase.storage
       .from("zip-compressed-sample-packs")
-      .upload(`public/${bundleName}.zip`, blobOfZippedAudioFiles, {
+      .upload(`public/${bundleNameValue}.zip`, blobOfZippedAudioFiles, {
         cacheControl: "3600",
         upsert: false,
       });
     if (data) {
-      console.log("data by supabase upload: ", data);
+      //@ts-ignore //typescript is wrong about the data type here
+      setBundleId(data.id)
+      console.log("data by supabase upload am schluss: ", data);
+      setModalGoToSamplePackOpen(true);
       updateProgress(totalTasks);
       updateProgress(totalTasks, true);
       setLoops([]);
@@ -332,11 +350,10 @@ export const UploadPage = () => {
       if (tagsRef.current?.value) tagsRef.current.value = "";
       if (nameInputRef.current?.value) nameInputRef.current.value = "";
     }
+
     if (error) {
       console.log("error supabase upload: ", error);
     }
-
-    console.log("samples to upload", { loops, oneShots });
   };
 
   const getUsedNames = async () => {
@@ -520,6 +537,7 @@ export const UploadPage = () => {
         value={progressValue}
         uploadSuccessful={uploadSuccessful}
       />
+      <GoToSamplePackModal open={modalGoToSamplePackOpen} goToSamplePack={goToSamplePack}/>
       <Toaster theme="dark" style={{ borderColor: "#cf3e67 !important" }} />
     </div>
   );
